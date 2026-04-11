@@ -41,7 +41,7 @@ function roundedRectPoints(w, h, r, steps = 200) {
 // Canvas texture for thread cross-section (warm linen gradient)
 function makeThreadTexture() {
   const c = document.createElement('canvas');
-  c.width = 32; c.height = 256;
+  c.width = 22; c.height = 256;
   const ctx = c.getContext('2d');
   const g = ctx.createLinearGradient(0, 0, 32, 0);
   g.addColorStop(0, '#c48857ff');
@@ -103,19 +103,43 @@ export function StitchThread({ coverW, coverH, inset = 0.05, z = 0.02 }) {
     const geometries = [];
     let d = GAP / 2;  // start offset so first stitch is centred nicely
 
+    const RING_Y = [0.13, 0.207, 0.282, 0.717, 0.793, 0.87].map(n => (n - 0.5) * coverH);
+
     while (d < total) {
       const dEnd = Math.min(d + STITCH, total);
-      // Sample ~6 points per stitch
       const segPts = [];
-      const steps = 6;
+      const steps = 8;
+      
       for (let s = 0; s <= steps; s++) {
         const interp = d + (dEnd - d) * s / steps;
         const p = sampleAt(interp);
-        segPts.push(new THREE.Vector3(p.x, p.y, 0));
+        
+        const t = s / steps;
+        // Natural stitch curve: dives into the leather at the ends
+        let zBase = -0.014 + 0.014 * Math.sin(t * Math.PI);
+        
+        // Plunge thread entirely beneath the hardware if passing over a ring hole
+        // This hides the thread exactly under the hole, preventing huge gaps in the stitching pattern
+        if (p.x < -coverW / 2 + inset + 0.05) {
+          for (const ry of RING_Y) {
+            const dY = Math.abs(p.y - ry);
+            const holeR = 0.024; 
+            if (dY < holeR) {
+              const falloff = 1 - (dY / holeR);
+              // Push it down deep gracefully
+              zBase -= 0.022 * Math.pow(falloff, 1.5); 
+              break;
+            }
+          }
+        }
+        
+        segPts.push(new THREE.Vector3(p.x, p.y, zBase));
       }
+      
       if (segPts.length >= 2) {
         geometries.push(segPts);
       }
+      
       d += UNIT;
     }
 
@@ -128,7 +152,7 @@ export function StitchThread({ coverW, coverH, inset = 0.05, z = 0.02 }) {
         const curve = new THREE.CatmullRomCurve3(segPts, false, 'centripetal', 0.5);
         const geo = new THREE.TubeGeometry(curve, segPts.length * 2, TUBE_R, 8, false);
         return (
-          <mesh key={si} geometry={geo} castShadow>
+          <mesh key={si} geometry={geo} castShadow receiveShadow>
             <meshStandardMaterial
               map={threadTex}
               roughness={0.91}
