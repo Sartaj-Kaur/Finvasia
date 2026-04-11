@@ -4,7 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 
 // Helper component for Quick Action Buttons
-const QuickAction = ({ icon, label }: { icon: any, label: string }) => (
+const QuickAction = ({ icon, label }) => (
   <View style={styles.actionContainer}>
     <TouchableOpacity style={styles.actionButton}>
       <FontAwesome name={icon} size={20} color="#FCD34D" />
@@ -14,7 +14,7 @@ const QuickAction = ({ icon, label }: { icon: any, label: string }) => (
 );
 
 // Helper component for Spending Categories
-const CategoryRow = ({ title, amount, color, percentage }: any) => (
+const CategoryRow = ({ title, amount, color, percentage }) => (
   <View style={styles.categoryRow}>
     <View style={styles.categoryInfo}>
       <View style={[styles.categoryDot, { backgroundColor: color }]} />
