@@ -13,7 +13,7 @@ export function Wallet() {
     <>
       {/* trigger - The original wallet lying on the desk */}
       <div 
-        className="absolute top-0 right-12 z-50 group hover:scale-105 transition-transform duration-300 cursor-pointer"
+        className="relative z-50 group hover:scale-105 transition-transform duration-300 cursor-pointer"
         onClick={() => setIsOpen(true)}
       >
         {/* Wallet Leather Base */}

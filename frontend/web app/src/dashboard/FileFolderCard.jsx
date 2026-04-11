@@ -44,7 +44,9 @@ export function FileFolderCard() {
 
   return (
     <>
-      <div className="relative pointer-events-auto w-[360px] h-[260px] flex items-center justify-center">
+      <div className="relative pointer-events-auto flex items-center justify-center"
+        style={{ width: 'clamp(280px, 22vw, 360px)', height: 'clamp(190px, 16vw, 260px)' }}
+      >
         {order.map((id, index) => {
           const folder = folders.find(f => f.id === id);
           const isTop = index === order.length - 1;
@@ -89,8 +91,10 @@ export function FileFolderCard() {
               >
                 {/* Physical Shape */}
                 <div 
-                  className="w-[320px] h-[220px] relative overflow-hidden flex items-center justify-center transform-gpu"
+                  className="relative overflow-hidden flex items-center justify-center transform-gpu"
                   style={{ 
+                    width: 'clamp(250px, 20vw, 320px)',
+                    height: 'clamp(165px, 14vw, 220px)',
                     clipPath: leftClip
                   }}
                 >
