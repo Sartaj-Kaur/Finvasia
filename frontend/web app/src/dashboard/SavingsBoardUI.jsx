@@ -39,7 +39,7 @@ export default function SavingsBoardUI() {
   const progressPercent = Math.max(0, Math.min(100, (savedAmount / totalTarget) * 100));
 
   return (
-    <div className="w-[380px] xl:w-[480px] font-sans rotate-[-1deg] shadow-cinematic-lg group">
+    <div style={{ width: 'clamp(300px, 28vw, 480px)' }} className="font-sans rotate-[-1deg] shadow-cinematic-lg group">
       
       {/* 
         PREMIUM WOOD/GOLD FRAME

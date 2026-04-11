@@ -1,6 +1,6 @@
 export function StickyNotes() {
   return (
-    <div className="relative w-48 h-64">
+    <div className="relative" style={{ width: 'clamp(140px, 12vw, 192px)', height: 'clamp(180px, 16vw, 256px)' }}>
       {/* Pink Note */}
       <div 
         className="absolute top-0 right-8 w-32 h-32 bg-[#ffcbf2] p-4 rotate-[-4deg] border-t border-white/50 bg-noise"

@@ -46,8 +46,8 @@ export function LetterCard() {
         
         {/* ENVELOPE OBJECT */}
         <motion.div
-          className={`relative w-[380px] xl:w-[420px] h-[220px] drop-shadow-[5px_20px_25px_rgba(0,0,0,0.45)] ${step >= 4 ? 'z-0' : 'z-20'}`}
-          style={{ perspective: 1200 }}
+          className={`relative drop-shadow-[5px_20px_25px_rgba(0,0,0,0.45)] ${step >= 4 ? 'z-0' : 'z-20'}`}
+          style={{ perspective: 1200, width: 'clamp(280px, 24vw, 420px)', height: 'clamp(160px, 14vw, 220px)' }}
           animate={{
             rotateZ: step >= 4 ? 0 : -2,
             scale: step >= 4 ? 0.9 : 1,
