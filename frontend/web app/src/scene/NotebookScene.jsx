@@ -1,15 +1,18 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Text, RoundedBox } from '@react-three/drei';
+import { Environment, Text, RoundedBox, useTexture, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { useSpring, a } from '@react-spring/three';
 import * as THREE from 'three';
 import { LeatherCover } from './LeatherCover';
 import { StitchThread } from './StitchThread';
 import { RingsOnly, RingHoles } from './MetalRings';
+import fileAvif from '../assets/file.avif';
+import LeftPageUI from './LeftPageUI';
+import RightPageUI from './RightPageUI';
 
-// ── Notebook dimensions (Three.js world units)
-const FACE_W = 1.05;   // cover width
+// ── Base Notebook dimensions (Three.js world units)
+const BASE_FACE_W = 1.05;   // cover width
 const NB_H = 1.75;   // cover height  
 const COVER_D = 0.045;
 const PAPER_D = 0.035;
@@ -20,77 +23,52 @@ const FRONT_Z = PAPER_D / 2 + COVER_D / 2;
 const BACK_Z = -PAPER_D / 2 - COVER_D / 2;
 
 // X-axis left edge (Hinge for the front cover)
-const LEFT_X = -FACE_W / 2;
+const LEFT_X = -BASE_FACE_W / 2;
 const RING_X = LEFT_X;
 
 // Ring Y positions
 const RING_Y = [0.13, 0.207, 0.282, 0.717, 0.793, 0.87].map(n => (n - 0.5) * NB_H);
 
 const TABS = [
-  { name: 'MAY', color: '#D4826A' },  // warm coral
-  { name: 'JUN', color: '#7DAA8C' },  // sage green
-  { name: 'JUL', color: '#C17F8E' },  // dusty rose
-  { name: 'AUG', color: '#CCA051' },  // warm amber
-  { name: 'SEP', color: '#7B9BB5' },  // clay blue
-  { name: 'DEC', color: '#9AAA7A' },  // olive
+  { id: 'BUDGET', name: 'BUDGET', color: '#D4826A' },  // warm coral
+  { id: 'GOALS', name: 'GOALS', color: '#7DAA8C' },  // sage green
+  { id: 'INVEST', name: 'INVEST', color: '#C17F8E' },  // dusty rose
 ];
 
-import { useMemo } from 'react';
 
-function MonthTab({ tab, tabX, tabY, tabWidth, isOpen, setIsOpen, setHovered }) {
-  // Procedural subtle paper texture (noise) mapped at a tiny scale
-  const paperNormalMap = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.createImageData(128, 128);
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      // Extremely subtle, short noise mimicking pressed paper fibers
-      const dv = (Math.random() - 0.5) * 15;
-      imageData.data[i] = Math.round(128 + dv);
-      imageData.data[i + 1] = Math.round(128 + dv);
-      imageData.data[i + 2] = 255;
-      imageData.data[i + 3] = 255;
-    }
-    ctx.putImageData(imageData, 0, 0);
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(2, 2);
-    return tex;
-  }, []);
 
-  // Paper depth must realistically be ultra-thin, almost like heavy cardstock rather than a block.
+function MonthTab({ tab, tabX, tabY, tabWidth, isActive, onClick, setHovered }) {
+
   const PAPER_THICKNESS = 0.003;
 
   return (
     <group
-      position={[tabX, tabY, 0]}
+      position={[tabX + (isActive ? 0.08 : 0), tabY, 0.02]}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
       <RoundedBox
-        args={[tabWidth, 0.09, PAPER_THICKNESS]}
-        radius={0.004}
-        smoothness={2}
+        args={[tabWidth, 0.22, PAPER_THICKNESS]}
+        radius={0.01}
+        smoothness={4}
         castShadow
       >
         <meshStandardMaterial
           color={tab.color}
-          roughness={0.95}
-          metalness={0.05}
-          normalMap={paperNormalMap}
-          normalScale={[0.15, 0.15]}
+          roughness={0.9}
+          metalness={0.0}
         />
       </RoundedBox>
     </group>
   );
 }
 
-function NotebookGroup({ isOpen, setIsOpen }) {
+function NotebookGroup({ isOpen, setIsOpen, month, year }) {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState('BUDGET');
+  const paperTex = useTexture(fileAvif);
 
   useEffect(() => {
     document.body.style.cursor = hovered ? 'pointer' : 'auto';
@@ -106,27 +84,27 @@ function NotebookGroup({ isOpen, setIsOpen }) {
   });
 
   // Master Spring handling both global centering translation AND rotation
-  // Closed = -1.2 on X, slightly rotated. Open = 0.525 on X (centering the total opened bounds) and front facing.
+  // Closed = 0.0 on X (centered perfectly). Open = 0.525 on X (centering the total opened bounds) and front facing.
   const { masterPosX, masterRotY, masterRotX, coverRotY } = useSpring({
-    masterPosX: isOpen ? 0.525 : -1.2,
+    masterPosX: isOpen ? 0.525 : 0.0,
     masterRotY: isOpen ? 0.0 : (hovered ? -0.22 : -0.12),
     masterRotX: isOpen ? 0.05 : (hovered ? 0.09 : 0.05),
     coverRotY: isOpen ? -Math.PI * 0.95 : 0,
     config: { mass: 1, tension: 70, friction: 18 },
   });
 
-  // We reduced paper width to ensure it is completely enveloped by the front cover.
-  // P_W = 0.96. Centered at X=0.01. Left edge: -0.47. Right edge: 0.49.
-  // Front cover spans [-0.525, 0.525]. So pages sit cleanly within it.
-  const P_H = NB_H - 0.06;
+  // Increase notebook width purely when clicked and opened
+  const extraWidth = isOpen ? 0.45 : 0;
+  const FACE_W = BASE_FACE_W + extraWidth;
+  const BACK_W = 1.125 + extraWidth;
   const P_W = FACE_W - 0.09;
 
-  // The back cover must be slightly wider to visually envelop the tabs.
-  // Original FACE_W = 1.05. Hinge is at LEFT_X = -0.525.
-  // We want the right side to extend past the tabs (tabs center X = 0.545, right edge = ~0.58).
-  // Target right edge = 0.60. Total Width = 0.60 - (-0.525) = 1.125.
-  const BACK_W = 1.125;
-  const BACK_CENTER_X = LEFT_X + (BACK_W / 2); // Center alignment offset for the broader geometry
+  const P_H = NB_H - 0.06;
+
+  // Center alignments
+  const FRONT_CENTER_OFFSET = FACE_W / 2;
+  const BACK_CENTER_X = LEFT_X + (BACK_W / 2);
+  const P_CENTER_X = LEFT_X + 0.055 + (P_W / 2);
 
   return (
     <a.group
@@ -141,9 +119,30 @@ function NotebookGroup({ isOpen, setIsOpen }) {
       {/* ── FIXED BOTTOM HALF ───────────────────────────── */}
       {/* 1. Back pages (static) */}
       {[0, -1].map((off, i) => (
-        <mesh key={i} position={[0.01 + off * 0.005, 0, off * 0.005]} castShadow receiveShadow>
+        <mesh 
+          key={i} 
+          position={[P_CENTER_X + off * 0.005, 0, off * 0.005]} 
+          castShadow 
+          receiveShadow
+          onPointerOver={(e) => e.stopPropagation()} 
+          onPointerOut={() => {}}
+          onPointerMove={(e) => e.stopPropagation()}
+        >
           <boxGeometry args={[P_W, P_H, PAPER_D / 4]} />
-          <meshStandardMaterial color={i % 2 === 0 ? '#f2dfc8' : '#e8d4bb'} roughness={0.97} />
+          <meshStandardMaterial map={paperTex} roughness={0.97} />
+          {i === 0 && isOpen && (
+            <Html
+              transform
+              center
+              zIndexRange={[100, 0]}
+              position={[0, 0, PAPER_D / 8 + 0.006]}
+              scale={0.06}
+            >
+              <div className="w-[800px] h-[1000px] overflow-visible">
+                <RightPageUI isOpen={isOpen} activeTab={activeTab} month={month} year={year} />
+              </div>
+            </Html>
+          )}
         </mesh>
       ))}
 
@@ -169,15 +168,12 @@ function NotebookGroup({ isOpen, setIsOpen }) {
 
       {/* 4. Month Tabs (Interactive triggers) */}
       {TABS.map((tab, i) => {
-        // Spreading the tabs evenly across the entire length of the notebook 
-        // by increasing the vertical distance modifier from 0.135 to 0.26
-        const tabY = NB_H / 2 - 0.2 - i * 0.26;
-        // Total physical stretch of the card. 0.18 units is very deep.
-        const tabWidth = 0.18;
-        // By centering the anchor at 0.52:
-        // The LEFT edge lands at 0.43 (deeply buried within the notebook papers which rest at 0.49).
-        // The RIGHT edge lands at 0.61 (protruding successfully past the 0.60 back-cover edge!).
-        const tabX = 0.52;
+        // Spreading the tabs evenly across the entire length of the notebook
+        const tabY = NB_H / 2 - 0.25 - i * 0.28;
+        // Total physical stretch of the card. Increased drastically.
+        const tabWidth = 0.28;
+        // Pushing the X further out so the tab text is highly visible
+        const tabX = 0.55 + extraWidth;
         return (
           <MonthTab
             key={i}
@@ -185,8 +181,19 @@ function NotebookGroup({ isOpen, setIsOpen }) {
             tabX={tabX}
             tabY={tabY}
             tabWidth={tabWidth}
-            isOpen={isOpen}
-            setIsOpen={setIsOpen}
+            isActive={isOpen && activeTab === tab.id}
+            onClick={() => {
+              if (!isOpen) {
+                setIsOpen(true);
+                setActiveTab(tab.id);
+              } else {
+                if (activeTab === tab.id) {
+                  setIsOpen(false);
+                } else {
+                  setActiveTab(tab.id);
+                }
+              }
+            }}
             setHovered={setHovered}
           />
         );
@@ -200,13 +207,27 @@ function NotebookGroup({ isOpen, setIsOpen }) {
         position={[LEFT_X, 0, FRONT_Z]}
         rotation-y={coverRotY}
       >
-        <group position={[-LEFT_X, 0, 0]}>
+        <group position={[FRONT_CENTER_OFFSET, 0, 0]}>
 
           {/* A. Front Pages (swinging with the cover) */}
           {[2, 1].map((off, i) => (
             <mesh key={`p_f_${i}`} position={[0.01 + off * 0.005, 0, -FRONT_Z + off * 0.005]} castShadow receiveShadow>
               <boxGeometry args={[P_W, P_H, PAPER_D / 4]} />
-              <meshStandardMaterial color={i % 2 === 0 ? '#f2dfc8' : '#e8d4bb'} roughness={0.97} />
+              <meshStandardMaterial map={paperTex} roughness={0.97} />
+              {i === 0 && isOpen && (
+                <Html
+                  transform
+                  center
+                  zIndexRange={[100, 0]}
+                  position={[0, 0, -PAPER_D / 8 - 0.006]}
+                  rotation={[0, Math.PI, 0]}
+                  scale={0.07}
+                >
+                  <div className="w-[800px] h-[1000px] overflow-visible">
+                <LeftPageUI isOpen={isOpen} month={month} year={year} />
+              </div>
+                </Html>
+              )}
             </mesh>
           ))}
 
@@ -218,6 +239,18 @@ function NotebookGroup({ isOpen, setIsOpen }) {
             depth={COVER_D}
             colorTint="#ffffff"
           />
+
+          {/* RAYCAST SHIELD: Prevents mouse from piercing the solid cover and hovering visually hidden back tabs */}
+          <mesh 
+            position={[0, 0, 0]} 
+            onPointerOver={(e) => e.stopPropagation()} 
+            onPointerOut={() => {}}
+            onPointerMove={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <boxGeometry args={[FACE_W, NB_H, COVER_D * 8]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} color="#ffffff" />
+          </mesh>
 
           {/* C. Dark Holes */}
           <RingHoles ringYPositions={RING_Y} spineX={RING_X} zOffset={COVER_D / 2} />
@@ -263,7 +296,7 @@ function NotebookGroup({ isOpen, setIsOpen }) {
   );
 }
 
-export default function NotebookScene({ isOpen, setIsOpen }) {
+export default function NotebookScene({ isOpen, setIsOpen, month, year }) {
   return (
     <Canvas
       shadows
@@ -289,7 +322,9 @@ export default function NotebookScene({ isOpen, setIsOpen }) {
       <pointLight position={[0.8, -0.5, 2.2]} intensity={6.0} color="#ffd580" distance={3.5} decay={2} />
 
       <Environment preset="studio" environmentIntensity={0.15} />
-      <NotebookGroup isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Suspense fallback={null}>
+        <NotebookGroup isOpen={isOpen} setIsOpen={setIsOpen} month={month} year={year} />
+      </Suspense>
 
     </Canvas>
   );

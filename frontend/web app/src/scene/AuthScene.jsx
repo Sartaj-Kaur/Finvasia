@@ -75,7 +75,7 @@ export function AuthScene() {
   const handleEmailSignUp = (e) => {
     e.preventDefault();
     setInfo('');
-    setError('Account creation is only available on the Finvasia mobile app.');
+    setError('Account creation is only available on the Monager mobile app.');
   };
 
   const isSignUp = tab === 'signup';
@@ -537,11 +537,11 @@ export function AuthScene() {
             <div className="auth-stamp">
               <div className="auth-stamp-box">
                 <div className="auth-stamp-box-inner">
-                  <span className="auth-stamp-letter">F</span>
+                  <span className="auth-stamp-letter">M</span>
                 </div>
               </div>
               <div>
-                <div className="auth-brand-name">Finvasia</div>
+                <div className="auth-brand-name">Monager</div>
                 <div className="auth-brand-sub">Personal Finance Ledger</div>
               </div>
             </div>
@@ -697,7 +697,7 @@ export function AuthScene() {
                       lineHeight: 1.6,
                       margin: 0,
                     }}>
-                      Account creation is available on the <strong>Finvasia mobile app</strong>.
+                      Account creation is available on the <strong>Monager mobile app</strong>.
                     </p>
                     <p style={{
                       fontFamily: 'Courier New, monospace',
@@ -797,7 +797,7 @@ export function AuthScene() {
                 <span className="auth-mobile-cta-label">New here?</span>
               </div>
               <p className="auth-mobile-cta-text">
-                Create your account on the Finvasia mobile app.
+                Create your account on the Monager mobile app.
               </p>
               <div className="auth-mobile-badge">
                 <Smartphone size={11} color="rgba(212,175,55,0.8)" />

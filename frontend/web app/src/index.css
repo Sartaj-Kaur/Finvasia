@@ -5,8 +5,25 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* REQUIRED DESIGN TOKENS */
+    --color-paper: #f5f1e8;
+    --color-paper-light: #faf7f2;
+    --color-leather: #6b4f3b;
+    --color-gold: #d4af37;
+    --color-text-main: #2c2c2c;
+    --color-text-muted: #6b6b6b;
+
+    /* REQUIRED SPACING TOKENS - Map abstract names to rem values */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  }
+
   body {
-    @apply font-sans antialiased text-gray-800;
+    @apply font-sans antialiased text-[var(--color-text-main)];
     background-image: repeating-linear-gradient(to right, #cda989, #cda989 2px, transparent 2px, transparent 40px), linear-gradient(to right, #d4bda5, #d4bda5);
   }
 }
