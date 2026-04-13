@@ -1,9 +1,0 @@
-.env
-**/.env
-.env.*
-!**/.env.example
-__pycache__/
-*.pyc
-vp-be/
-vp-fe/
-node_modules
