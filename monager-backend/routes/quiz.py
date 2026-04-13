@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
+from database import supabase
 
 router = APIRouter(prefix="/quiz", tags=["Quiz"])
 
@@ -10,6 +11,7 @@ class QuizAnswer(BaseModel):
     reverse: bool
 
 class QuizSubmitRequest(BaseModel):
+    user_id: str
     answers: List[QuizAnswer]
 
 QUESTIONS = [
@@ -69,6 +71,14 @@ def submit_quiz(req: QuizSubmitRequest):
         
     scores = calculate_scores(req.answers)
     archetype = match_archetype(scores)
+    
+    try:
+        # Save to database
+        supabase.table('users').update({
+            "archetype": archetype["name"]
+        }).eq('id', req.user_id).execute()
+    except Exception as e:
+        print("Could not update supabase user:", e)
     
     return {
         "scores": scores,

@@ -1,40 +1,36 @@
 import os
-from dotenv import load_dotenv
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
+from google import genai
+from services.llm_context import build_user_context
 
-load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    client = genai.Client(api_key=GEMINI_API_KEY)
+else:
+    client = None
 
-if GENAI_AVAILABLE and GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
-async def generate_letter(archetype: str, income: float, total_spent: float, 
-                          happy: int, meh: int, stressed: int, new_investment: float) -> str:
+async def generate_letter(user_id: str) -> str:
     """
     Call Gemini API to generate a personality-aware financial summary letter.
     """
-    if not GENAI_AVAILABLE:
-        raise ImportError("google-generativeai is not installed. Using fallback.")
-        
-    if not GEMINI_API_KEY:
+    if not client:
         return "System configuration missing: GEMINI_API_KEY not set."
 
-    # Using gemini model
-    model = genai.GenerativeModel('gemini-1.5-pro')
+    # 1. Get entire month context
+    user_context = build_user_context(user_id)
     
     prompt = f"""
-System: You are Monager — a personality-aware financial manager. You are not a chatbot. You manage money silently and report back. The user's archetype is {archetype}. Communicate in that style.
-
-This month: income was ₹{income}, total spent was ₹{total_spent}, mood breakdown: happy {happy} days, stressed {stressed} days, meh {meh} days. Investment pool grew by ₹{new_investment}.
-
-Write a warm personal letter (150-200 words) from Monager's perspective. Do not give financial advice. Reflect, observe, encourage. End with one specific thing to focus on next month. Sign off as "— Monager"
+    System: You are Monager — a personality-aware financial manager. You are not a chatbot. You manage money silently and report back. 
+    
+    Below is the user's current context:
+    {user_context}
+    
+    Task: Write a warm personal letter (150-200 words) from Monager's perspective. Do not give financial advice. Reflect on their spending and mood, observe their behavior based on their archetype, and encourage them. End with one specific thing to focus on next month based strictly on their top spending category. Sign off as "— Monager"
     """
     
-    response = await model.generate_content_async(prompt)
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt
+    )
     if response and response.text:
         return response.text
     return "Error generating content."

@@ -1,8 +1,17 @@
 from fastapi import APIRouter
 from database import supabase
 from services.investment import get_portfolio_value
+from services.llm_context import build_user_context
+from services.memory import embed_and_store_memory
+from google import genai
+import os
 
 router = APIRouter(prefix="/insights", tags=["Insights"])
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    client = genai.Client(api_key=GEMINI_API_KEY)
+else:
+    client = None
 
 @router.get("/summary/{user_id}")
 async def get_insights_summary(user_id: str):
@@ -51,3 +60,33 @@ async def get_insights_summary(user_id: str):
         "simulated_value": simulated_value,
         "monager_observation": observation
     }
+
+@router.post("/sticky-note/{user_id}")
+async def generate_sticky_note(user_id: str):
+    """
+    Generates a randomized, archetype-aware brief insight "sticky note".
+    """
+    if not client:
+        return {"error": "GEMINI_API_KEY not configured."}
+        
+    user_context = build_user_context(user_id)
+    
+    prompt = f"""
+    System: You are Monager, the financial twin. 
+    Context:
+    {user_context}
+    
+    Task: Write a very short (1-2 sentences max) "sticky note" to the user. It should sound like a quick post-it note left on their desk. Be highly personal based on their archetype tone. Pick one randomness element to focus on: either their recent mood, a specific recent transaction, or their overall budget pace. Do NOT greet them, just write the note.
+    """
+    
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt
+    )
+    
+    note_text = response.text.strip() if response and response.text else "Keep an eye on that budget today!"
+    
+    # Embed and store
+    await embed_and_store_memory(user_id, note_text, memory_type="sticky_note")
+    
+    return {"note": note_text}
