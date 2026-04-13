@@ -1,24 +1,35 @@
+import { StyleSheet, Text, View, ScrollView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Platform, StyleSheet, View, Text } from 'react-native';
-import { WebView } from 'react-native-webview';
+import Colors from '@/constants/Colors';
 
-export default function PlannerModalScreen() {
-  // Use IP address for local testing if needed, or 10.0.2.2 for Android emulator
-  // For Expo Go on a physical device, this must be your computer's local LAN IP.
-  const webViewUrl = Platform.OS === 'android' ? 'http://10.0.2.2:5173' : 'http://localhost:5173';
+const theme = Colors.light;
 
+export default function ModalScreen() {
   return (
     <View style={styles.container}>
-      <WebView 
-        source={{ uri: webViewUrl }} 
-        style={styles.webview}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-      />
-      {/* Fallback overlay text handled cleanly */}
-      <View style={styles.header}>
-        <Text style={styles.title}>3D Desk Planner</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        
+        <View style={styles.dateStamp}>
+          <Text style={styles.dateStampText}>MAR 31, 2026</Text>
+        </View>
+
+        <Text style={styles.salutation}>Dear Navya,</Text>
+        
+        <Text style={styles.bodyText}>
+          March was a quiet month, and quiet is good. You managed to rein in the impulsive weekend spending, and we are starting to see the compound effects taking root.{"\n\n"}
+          You’ll notice that those extra ₹500 you decided not to spend on coffee last week were immediately salvaged and put to work. I’ve securely routed the surplus to your New Phone Fund, inching you 5% closer to the target.{"\n\n"}
+          As we move into April, your FinTwin noticed a pattern. When you log a "Stressed" mood, your food delivery expenses spike by almost 40% over the next 48 hours. Let's keep a gentle eye on that this week.{"\n\n"}
+          Remember: small habits now mean absolute freedom later. You're doing the hard work. I'm just keeping track.
+        </Text>
+
+        <Text style={styles.signOff}>
+          Warmly,{"\n"}
+          <Text style={styles.signature}>Monager</Text>
+        </Text>
+
+      </ScrollView>
+
+      {/* Use a light status bar on iOS to account for the black space above the modal */}
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </View>
   );
@@ -27,26 +38,57 @@ export default function PlannerModalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: theme.paper,
   },
-  webview: {
-    flex: 1,
-    backgroundColor: '#0f172a',
+  scrollContent: {
+    padding: 30,
+    paddingTop: 50,
+    paddingBottom: 80, // Allow for scroll buffer
   },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1f2937',
+  dateStamp: {
+    alignSelf: 'flex-end',
+    borderWidth: 2,
+    borderColor: '#c0a080',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    transform: [{ rotate: '5deg' }],
+    marginBottom: 40,
+    opacity: 0.6,
   },
-  title: {
-    fontSize: 16,
+  dateStampText: {
+    fontFamily: 'Courier',
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#c0a080',
+    letterSpacing: 2,
   },
+  salutation: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  bodyText: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 18,
+    lineHeight: 30,
+    marginBottom: 30,
+    opacity: 0.85,
+  },
+  signOff: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 18,
+    marginTop: 20,
+  },
+  signature: {
+    fontFamily: 'cursive', // fallback for handwritten
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: theme.leather,
+    marginTop: 10,
+  }
 });

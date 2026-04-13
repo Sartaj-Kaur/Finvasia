@@ -1,58 +1,60 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, Text } from 'react-native';
+
+import Colors from '@/constants/Colors';
+import { useColorScheme } from '@/components/useColorScheme';
 
 function TabBarIcon(props) {
   return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
 }
 
 export default function TabLayout() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#FCD34D', // Gold accent
-        tabBarInactiveTintColor: '#9da3af',
+        tabBarActiveTintColor: colors.leather,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: '#0f172a',
-          borderTopWidth: 0,
+          backgroundColor: colors.paper,
+          borderTopWidth: 1,
+          borderTopColor: colors.stone,
           elevation: 0,
           shadowOpacity: 0,
-          height: 80,
-          paddingBottom: 20,
+          height: 85,
+          paddingBottom: 25,
           paddingTop: 10,
         },
         headerStyle: {
-          backgroundColor: '#0f172a',
+          backgroundColor: colors.paper,
           elevation: 0,
           shadowOpacity: 0,
-          borderBottomWidth: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.stone,
         },
         headerTitleStyle: {
           fontWeight: 'bold',
-          color: '#ffffff',
+          color: colors.text,
+          fontFamily: 'serif',
         },
-        headerTintColor: '#ffffff',
+        headerTintColor: colors.text,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          headerTitle: 'Overview',
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          title: 'Desk',
+          headerTitle: 'Monager',
+          tabBarIcon: ({ color }) => <TabBarIcon name="inbox" color={color} />,
           headerRight: () => (
             <Link href="/modal" asChild>
               <Pressable>
                 {({ pressed }) => (
-                  <View style={{
-                    backgroundColor: '#1f2937',
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 16,
-                    marginRight: 15,
-                    opacity: pressed ? 0.5 : 1,
-                  }}>
-                    <FontAwesome name="book" size={16} color="#FCD34D" style={{ marginRight: 4 }} />
+                  <View style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}>
+                    <FontAwesome name="envelope-open-o" size={20} color={colors.leather} />
                   </View>
                 )}
               </Pressable>
@@ -61,48 +63,53 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="insights"
+        name="activity"
         options={{
-          title: 'Insights',
-          tabBarIcon: ({ color }) => <TabBarIcon name="pie-chart" color={color} />,
+          title: 'Activity',
+          headerTitle: 'Working Money',
+          tabBarIcon: ({ color }) => <TabBarIcon name="bar-chart" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="add"
+        name="scan"
         options={{
-          title: 'Add',
+          title: 'Scan',
           tabBarIcon: ({ color }) => (
             <View style={{
-              backgroundColor: '#10B981', // Green accent
-              width: 48,
-              height: 48,
-              borderRadius: 24,
+              backgroundColor: colors.gold,
+              width: 56,
+              height: 56,
+              borderRadius: 28,
               justifyContent: 'center',
               alignItems: 'center',
-              marginTop: -15, // Floating active button
-              shadowColor: '#10B981',
+              marginTop: -20, 
+              shadowColor: colors.gold,
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
+              shadowOpacity: 0.4,
               shadowRadius: 5,
+              borderWidth: 3,
+              borderColor: colors.paper
             }}>
-              <FontAwesome name="plus" size={24} color="#0f172a" />
+              <FontAwesome name="camera" size={22} color="#fcfaf5" />
             </View>
           ),
           tabBarLabel: () => null,
         }}
       />
       <Tabs.Screen
-        name="goals"
+        name="fintwin"
         options={{
-          title: 'Goals',
-          tabBarIcon: ({ color }) => <TabBarIcon name="bullseye" color={color} />,
+          title: 'FinTwin',
+          headerTitle: 'Talk to Monager',
+          tabBarIcon: ({ color }) => <TabBarIcon name="comment-o" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="futureself"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          title: 'Future',
+          headerTitle: 'Future Self',
+          tabBarIcon: ({ color }) => <TabBarIcon name="user-circle-o" color={color} />,
         }}
       />
     </Tabs>

@@ -1,116 +1,129 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import Animated, { FadeInUp, FadeInDown, FadeOut, Layout } from 'react-native-reanimated';
+import Colors from '@/constants/Colors';
 
-// Helper component for Quick Action Buttons
-const QuickAction = ({ icon, label }) => (
-  <View style={styles.actionContainer}>
-    <TouchableOpacity style={styles.actionButton}>
-      <FontAwesome name={icon} size={20} color="#FCD34D" />
-    </TouchableOpacity>
-    <Text style={styles.actionLabel}>{label}</Text>
-  </View>
+const theme = Colors.light;
+
+const StickyNote = () => (
+  <Animated.View 
+    entering={FadeInDown.delay(200).springify()} 
+    style={styles.stickyNoteContainer}
+  >
+    <View style={styles.stickyNote}>
+      <Text style={styles.stickyText}>
+        "You spent ₹1,240 on food this week. I kept ₹400 working."
+      </Text>
+      <Text style={styles.stickySignature}>— Monager</Text>
+    </View>
+  </Animated.View>
 );
 
-// Helper component for Spending Categories
-const CategoryRow = ({ title, amount, color, percentage }) => (
-  <View style={styles.categoryRow}>
-    <View style={styles.categoryInfo}>
-      <View style={[styles.categoryDot, { backgroundColor: color }]} />
-      <Text style={styles.categoryText}>{title}</Text>
+const ProgressBar = ({ label, percentage }) => {
+  const getBarColor = (pct) => {
+    if (pct < 70) return '#10B981'; // Green
+    if (pct <= 90) return '#F59E0B'; // Amber
+    return '#EF4444'; // Red
+  };
+
+  const bgColor = getBarColor(percentage);
+
+  return (
+    <View style={styles.progressRow}>
+      <View style={styles.progressHeader}>
+        <Text style={styles.progressLabel}>{label}</Text>
+        <Text style={[styles.progressPercent, { color: bgColor }]}>{percentage}%</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: bgColor }]} />
+      </View>
     </View>
-    <View style={styles.categoryRight}>
-      <Text style={styles.categoryAmount}>₹{amount}</Text>
-      <Text style={[styles.categoryPercentage, { color }]}>{percentage}</Text>
+  );
+};
+
+const BudgetSnapshot = () => (
+  <Animated.View entering={FadeInUp.delay(300)} style={styles.section}>
+    <Text style={styles.sectionTitle}>Monthly Rhythm</Text>
+    <View style={styles.card}>
+      <ProgressBar label="Needs" percentage={65} />
+      <ProgressBar label="Wants" percentage={82} />
+      <ProgressBar label="Saved" percentage={95} />
     </View>
-  </View>
+  </Animated.View>
 );
+
+const MoodCheck = () => {
+  const [moodLogged, setMoodLogged] = useState(false);
+
+  if (moodLogged) {
+    return (
+      <Animated.View entering={FadeInUp} style={[styles.card, styles.centerCard]}>
+        <Text style={styles.thankYouText}>Mood logged. I'll remember this.</Text>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View exiting={FadeOut} entering={FadeInUp.delay(400)} style={styles.section}>
+      <Text style={styles.sectionTitle}>How are you feeling about money?</Text>
+      <View style={styles.moodRow}>
+        <TouchableOpacity style={styles.moodButton} onPress={() => setMoodLogged(true)}>
+          <Text style={styles.moodEmoji}>😊</Text>
+          <Text style={styles.moodLabel}>Happy</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.moodButton} onPress={() => setMoodLogged(true)}>
+          <Text style={styles.moodEmoji}>😐</Text>
+          <Text style={styles.moodLabel}>Meh</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.moodButton} onPress={() => setMoodLogged(true)}>
+          <Text style={styles.moodEmoji}>😟</Text>
+          <Text style={styles.moodLabel}>Stressed</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+};
+
+const PersonalityQuestion = () => {
+  const [answered, setAnswered] = useState(false);
+
+  if (answered) return null;
+
+  return (
+    <Animated.View exiting={FadeOut} entering={FadeInUp.delay(500)} layout={Layout.springify()} style={styles.section}>
+      <View style={[styles.card, styles.questionCard]}>
+        <Text style={styles.questionTitle}>Daily Check</Text>
+        <Text style={styles.questionText}>Do you prefer saving or spending today?</Text>
+        <View style={styles.questionActions}>
+          <TouchableOpacity style={styles.answerButton} onPress={() => setAnswered(true)}>
+            <Text style={styles.answerText}>Saving</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.answerButton} onPress={() => setAnswered(true)}>
+            <Text style={styles.answerText}>Spending</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
 
 export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         
-        {/* HERO SECTION */}
-        <View style={styles.heroSection}>
-          <Text style={styles.greeting}>Welcome back,</Text>
-          <Text style={styles.balance}>₹ 2,45,000</Text>
-          <View style={styles.changeBadge}>
-            <FontAwesome name="arrow-up" size={12} color="#10B981" />
-            <Text style={styles.changeText}>+ ₹12,400 this month</Text>
-          </View>
-        </View>
+        <Text style={styles.headerState}>While you were away...</Text>
+        
+        <StickyNote />
+        
+        <BudgetSnapshot />
+        
+        <MoodCheck />
 
-        {/* OPEN PLANNER CTA (Alternatively placed here to be extremely visible) */}
-        <Link href="/modal" asChild>
-          <TouchableOpacity style={styles.plannerBanner}>
-            <View style={styles.plannerContent}>
-              <FontAwesome name="book" size={20} color="#0f172a" />
-              <Text style={styles.plannerText}>Open 3D Desk Planner</Text>
-            </View>
-            <FontAwesome name="chevron-right" size={14} color="#0f172a" />
-          </TouchableOpacity>
-        </Link>
+        <PersonalityQuestion />
 
-        {/* SECTION 1 - QUICK ACTIONS */}
-        <View style={styles.quickActions}>
-          <QuickAction icon="minus" label="Expense" />
-          <QuickAction icon="plus" label="Income" />
-          <QuickAction icon="exchange" label="Transfer" />
-          <QuickAction icon="download" label="Save" />
-        </View>
-
-        {/* SECTION 2 - SPENDING */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Spending Breakdown</Text>
-          <View style={styles.card}>
-            <CategoryRow title="Needs" amount="42,000" color="#10B981" percentage="55%" />
-            <View style={styles.divider} />
-            <CategoryRow title="Wants" amount="21,500" color="#FCD34D" percentage="30%" />
-            <View style={styles.divider} />
-            <CategoryRow title="Other" amount="8,500" color="#9da3af" percentage="15%" />
-          </View>
-        </View>
-
-        {/* SECTION 3 - GOALS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Goals</Text>
-            <TouchableOpacity><Text style={styles.seeAll}>See All</Text></TouchableOpacity>
-          </View>
-          <View style={styles.card}>
-            <View style={styles.goalHeader}>
-              <Text style={styles.goalTitle}>New Phone Fund</Text>
-              <Text style={styles.goalAmount}>₹9,200 / ₹30,000</Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: '30%', backgroundColor: '#FCD34D' }]} />
-            </View>
-          </View>
-        </View>
-
-        {/* SECTION 4 - SAVINGS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Monthly Savings</Text>
-          <View style={styles.card}>
-            <View style={styles.savingsRow}>
-              <View>
-                <Text style={styles.savingsLabel}>March Goal</Text>
-                <Text style={styles.savingsValue}>₹ 15,000</Text>
-              </View>
-              <View style={styles.savingsRight}>
-                <Text style={styles.savingsPercentage}>82%</Text>
-                <Text style={styles.savingsSubtext}>Completed</Text>
-              </View>
-            </View>
-            <View style={[styles.progressBarBg, { marginTop: 15 }]}>
-              <View style={[styles.progressBarFill, { width: '82%', backgroundColor: '#10B981' }]} />
-            </View>
-          </View>
-        </View>
-
-        <View style={{ height: 40 }} />
+        <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -119,204 +132,175 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: theme.paper,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 15,
   },
-  heroSection: {
-    marginTop: 20,
-    marginBottom: 25,
-  },
-  greeting: {
-    color: '#9da3af',
+  headerState: {
+    color: theme.tabIconDefault,
+    fontFamily: 'serif',
     fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  balance: {
-    color: '#ffffff',
-    fontSize: 42,
-    fontWeight: 'bold',
-    marginTop: 5,
-    letterSpacing: -1,
-  },
-  changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    fontStyle: 'italic',
+    marginBottom: 20,
     marginTop: 10,
   },
-  changeText: {
-    color: '#10B981',
-    fontWeight: '600',
-    fontSize: 14,
-    marginLeft: 6,
-  },
-  plannerBanner: {
-    backgroundColor: '#FCD34D',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 30,
-    shadowColor: '#FCD34D',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  plannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  plannerText: {
-    color: '#0f172a',
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginLeft: 12,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  stickyNoteContainer: {
     marginBottom: 35,
-  },
-  actionContainer: {
     alignItems: 'center',
   },
-  actionButton: {
-    backgroundColor: '#1f2937',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  stickyNote: {
+    backgroundColor: theme.stickyYellow,
+    width: '90%',
+    padding: 25,
+    transform: [{ rotate: '-2deg' }],
+    shadowColor: theme.leatherLight,
+    shadowOffset: { width: 2, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+    // Torn edge simulation via border
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
-  actionLabel: {
-    color: '#e2e8f0',
-    fontSize: 13,
-    fontWeight: '500',
+  stickyText: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 22,
+    lineHeight: 30,
+  },
+  stickySignature: {
+    color: theme.tabIconDefault,
+    fontFamily: 'serif',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 15,
+    textAlign: 'right',
   },
   section: {
-    marginBottom: 25,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 35,
   },
   sectionTitle: {
-    color: '#f8fafc',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  seeAll: {
-    color: '#FCD34D',
-    fontWeight: '600',
-    fontSize: 14,
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: '#1f2937',
-    borderRadius: 20,
+    backgroundColor: theme.paperLight,
+    borderWidth: 1,
+    borderColor: theme.stone,
     padding: 20,
+    shadowColor: theme.leatherLight,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-  categoryRow: {
+  centerCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  thankYouText: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontStyle: 'italic',
+  },
+  progressRow: {
+    marginBottom: 18,
+  },
+  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    marginBottom: 8,
   },
-  categoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  categoryDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 12,
-  },
-  categoryText: {
-    color: '#e2e8f0',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  categoryRight: {
-    alignItems: 'flex-end',
-  },
-  categoryAmount: {
-    color: '#ffffff',
-    fontSize: 16,
+  progressLabel: {
+    color: theme.text,
+    fontSize: 13,
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  categoryPercentage: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
+  progressPercent: {
+    fontSize: 13,
+    fontWeight: 'bold',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#374151',
-    marginVertical: 15,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 15,
-  },
-  goalTitle: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  goalAmount: {
-    color: '#9da3af',
-    fontSize: 14,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#374151',
-    borderRadius: 4,
+  progressTrack: {
+    height: 4,
+    backgroundColor: theme.stone,
+    borderRadius: 2,
     overflow: 'hidden',
   },
-  progressBarFill: {
+  progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 2,
   },
-  savingsRow: {
+  moodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  moodButton: {
+    backgroundColor: theme.paperLight,
+    borderWidth: 1,
+    borderColor: theme.stone,
+    width: '30%',
+    aspectRatio: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: theme.stone,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  savingsLabel: {
-    color: '#9da3af',
-    fontSize: 14,
-    marginBottom: 4,
+  moodEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
   },
-  savingsValue: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  savingsRight: {
-    alignItems: 'flex-end',
-  },
-  savingsPercentage: {
-    color: '#10B981',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  savingsSubtext: {
-    color: '#9da3af',
+  moodLabel: {
+    color: theme.text,
     fontSize: 12,
+    fontWeight: '500',
   },
+  questionCard: {
+    backgroundColor: theme.stone, // slightly darker card for the question
+    borderColor: theme.wood,
+  },
+  questionTitle: {
+    color: theme.leatherLight,
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  questionText: {
+    color: theme.text,
+    fontFamily: 'serif',
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  questionActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  answerButton: {
+    flex: 1,
+    backgroundColor: theme.paper,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.wood,
+  },
+  answerText: {
+    color: theme.text,
+    fontWeight: '600',
+    fontSize: 14,
+  }
 });
