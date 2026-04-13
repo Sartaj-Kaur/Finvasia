@@ -6,7 +6,7 @@ from database import supabase
 
 router = APIRouter(prefix="/mood", tags=["Mood"])
 
-@router.post("/")
+@router.post("/log")
 async def log_mood(mood_req: MoodLogRequest):
     """
     Accepts: user_id, mood (one of: happy, meh, stressed)
