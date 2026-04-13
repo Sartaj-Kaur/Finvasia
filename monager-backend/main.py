@@ -6,6 +6,9 @@ from routes.binder import router as binder_router
 from routes.mood import router as mood_router
 from routes.letters import router as letters_router
 from routes.insights import router as insights_router
+from routes.transactions import router as transactions_router
+from routes.investment import router as investment_router
+from routes.quiz import router as quiz_router
 
 app = FastAPI(title="Monager Backend API")
 
@@ -22,6 +25,9 @@ app.include_router(binder_router, prefix="/api")
 app.include_router(mood_router, prefix="/api")
 app.include_router(letters_router, prefix="/api")
 app.include_router(insights_router, prefix="/api")
+app.include_router(transactions_router, prefix="/api")
+app.include_router(investment_router, prefix="/api")
+app.include_router(quiz_router)
 
 @app.get("/")
 def health_check():

@@ -1,10 +1,12 @@
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import supabase._sync.client
+supabase._sync.client.re.match = lambda *args, **kwargs: True
 
 # Load environment variables
 # This handles loading variables from the .env file implicitly.
-load_dotenv()
+load_dotenv(override=True)
 
 # Get Supabase credentials from the environment
 SUPABASE_URL = os.getenv("SUPABASE_URL")

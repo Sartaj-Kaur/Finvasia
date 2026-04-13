@@ -1,11 +1,15 @@
 import os
-import google.generativeai as genai
 from dotenv import load_dotenv
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if GEMINI_API_KEY:
+if GENAI_AVAILABLE and GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 async def generate_letter(archetype: str, income: float, total_spent: float, 
@@ -13,6 +17,9 @@ async def generate_letter(archetype: str, income: float, total_spent: float,
     """
     Call Gemini API to generate a personality-aware financial summary letter.
     """
+    if not GENAI_AVAILABLE:
+        raise ImportError("google-generativeai is not installed. Using fallback.")
+        
     if not GEMINI_API_KEY:
         return "System configuration missing: GEMINI_API_KEY not set."
 

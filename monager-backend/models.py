@@ -23,3 +23,15 @@ class SetuWebhook(BaseModel):
     status: Optional[str] = None
     fiData: Optional[List[Dict[str, Any]]] = None
     data: Optional[Dict[str, Any]] = None
+
+class TransactionRequest(BaseModel):
+    """Payload for manual or scanned transactions."""
+    user_id: str
+    amount: float
+    merchant: str
+    date: Optional[str] = None  # Format: "YYYY-MM-DDTHH:MM:SSZ"
+
+class InvestmentSweepRequest(BaseModel):
+    """Payload for user approving a surplus sweep."""
+    user_id: str
+    amount: float

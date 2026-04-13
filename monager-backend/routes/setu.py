@@ -19,6 +19,33 @@ SETU_BASE_URL = os.getenv("SETU_BASE_URL", "https://fiu-sandbox.setu.co")
 SETU_CLIENT_ID = os.getenv("SETU_CLIENT_ID")
 SETU_CLIENT_SECRET = os.getenv("SETU_CLIENT_SECRET")
 
+# Debugging block to ensure variables are loaded correctly
+if not SETU_CLIENT_ID or not SETU_CLIENT_SECRET:
+    print(f"!!! CRITICAL WARNING: Setu credentials missing in environment! ID: {SETU_CLIENT_ID}, Secret Length: {len(SETU_CLIENT_SECRET) if SETU_CLIENT_SECRET else 0}")
+else:
+    print(f"--- Setu credentials loaded successfully. Client ID starting with: {SETU_CLIENT_ID[:5]}")
+
+@router.post("/consent/callback")
+async def handle_consent_callback(payload: SetuWebhook):
+    """
+    Handles status updates for consents (ACTIVE, REJECTED, REVOKED)
+    """
+    if payload.type == "CONSENT_STATUS_UPDATE":
+        status = payload.data.get("status") if payload.data else None
+        print(f"Setu consent {payload.consentId} status updated to: {status}")
+        
+    return {"status": "ok"}
+
+@router.post("/webhook")
+async def handle_webhook(payload: SetuWebhook, background_tasks: BackgroundTasks):
+    """
+    Handles Setu webhook requests (FI_DATA_READY)
+    """
+    if payload.type == "FI_DATA_READY":
+        background_tasks.add_task(process_webhook_data, payload)
+        
+    return {"status": "ok"}
+
 @router.post("/consent/{user_id}")
 async def create_consent(user_id: str, payload: ConsentRequest):
     """
@@ -154,26 +181,3 @@ async def process_webhook_data(payload: SetuWebhook):
                         
     # End of processing all transactions, run rule engine
     await run_rules(user_id, supabase)
-
-
-@router.post("/webhook")
-async def handle_webhook(payload: SetuWebhook, background_tasks: BackgroundTasks):
-    """
-    Handles Setu webhook requests
-    """
-    if payload.type == "FI_DATA_READY":
-        background_tasks.add_task(process_webhook_data, payload)
-        
-    return {"status": "ok"}
-
-
-@router.post("/consent/callback")
-async def handle_consent_callback(payload: SetuWebhook):
-    """
-    Handles status updates for consents (ACTIVE, REJECTED, REVOKED)
-    """
-    if payload.type == "CONSENT_STATUS_UPDATE":
-        status = payload.data.get("status") if payload.data else None
-        print(f"Setu consent {payload.consentId} status updated to: {status}")
-        
-    return {"status": "ok"}
