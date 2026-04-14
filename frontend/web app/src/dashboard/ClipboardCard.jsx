@@ -1,9 +1,53 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import HTMLFlipBook from 'react-pageflip';
 import paperImg from '../assets/file.avif';
 import woodImg from '../assets/clipboard.jpg';
+
+const TranslatedSection = ({ title, jargon }) => {
+  const [genZ, setGenZ] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    fetch('http://127.0.0.1:8000/api/translate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: jargon })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (isMounted) {
+            setGenZ(data.translatedText);
+            setLoading(false);
+        }
+      })
+      .catch((e) => {
+          console.error(e);
+          if (isMounted) setLoading(false);
+      });
+      return () => { isMounted = false; };
+  }, [jargon]);
+
+  return (
+    <div className="flex gap-4 items-start pb-4 mt-4 border-b border-[#2b1f1a]/10 mix-blend-multiply">
+      <div className="flex-1 w-[220px]">
+        <h4 className="font-bold text-[18px] text-[#2b1f1a] uppercase tracking-wide">{title}</h4>
+        <p className="text-[14px] text-[#2b1f1a]/80 font-serif leading-snug mt-1">{jargon}</p>
+      </div>
+      <div className="w-[180px] bg-[#e9c46a]/20 p-3 pt-3 rounded-md border border-[#e9c46a]/40 shadow-sm relative rotate-[1deg]">
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-2.5 bg-[#e76f51]/40 rounded shadow-sm opacity-60 rotate-[-3deg]" />
+        {loading ? (
+            <p className="text-[16px] text-gray-500 animate-pulse mt-1" style={{ fontFamily: "'Caveat', cursive" }}>translating fr fr...</p>
+        ) : (
+            <p className="text-[18px] text-[#2b1f1a] leading-tight mt-1" style={{ fontFamily: "'Caveat', cursive" }}>{genZ}</p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const Page = React.forwardRef((props, ref) => {
   return (
@@ -199,60 +243,72 @@ export function ClipboardCard() {
                       disableFlipByClick={false}
                     >
                       <Page number="1">
-                        <h3 className="font-serif text-[36px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-3 text-[#2b1f1a] mix-blend-multiply">FinTwin Analytics</h3>
-                        <p className="mt-5 text-[25px] text-[#2b1f1a] mix-blend-multiply" style={{ fontFamily: "'Caveat', cursive" }}>Analyzing past habits.</p>
-                        <div className="mt-11 flex gap-5 mix-blend-multiply">
-                          <div className="w-[112px] h-[112px] rounded-full border-[8px] border-[#e76f51] border-r-transparent animate-spin-slow flex items-center justify-center">
-                            <span className="font-bold text-[25px] text-[#2b1f1a]">75%</span>
-                          </div>
-                          <div className="pt-2">
-                            <p className="font-bold text-[#2b1f1a] text-[22px]">Budget Capacity</p>
-                            <p className="text-[18px] opacity-80 w-[280px] mt-2 font-serif leading-snug">Dining out expense is draining capacity heavily this month.</p>
-                          </div>
-                        </div>
+                        <h3 className="font-serif text-[32px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-2 text-[#2b1f1a] mix-blend-multiply">Retirement & Provident</h3>
+                        <TranslatedSection 
+                          title="EPF (Employee Provident)" 
+                          jargon="Employer and employee mandated contributions calculated at 12% of basic salary, yielding compounding sovereign-backed returns with strict temporal withdrawal covenants." 
+                        />
+                        <TranslatedSection 
+                          title="PPF (Public Provident)" 
+                          jargon="A statutorily locked-in sovereign instrument compounding annually, restricting principal liquidation until a 15-year maturation horizon." 
+                        />
                         <p className="absolute bottom-5 right-5 text-[15px] opacity-40 font-bold tracking-widest text-[#2b1f1a] mix-blend-multiply">PAGE 1</p>
                       </Page>
 
                       <Page number="2">
-                        <h3 className="font-serif text-[36px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-3 text-[#2b1f1a] mix-blend-multiply">Allocation</h3>
-                        <div className="mt-8 space-y-7 mix-blend-multiply">
-                          <div>
-                            <p className="text-[21px] font-bold text-[#2b1f1a]">Needs (50%)</p>
-                            <div className="w-full h-5 bg-[#2b1f1a]/15 rounded mt-1.5 border border-[#2b1f1a]/10"><div className="w-[50%] h-full bg-[#2a9d8f] rounded border border-black/10"></div></div>
-                          </div>
-                          <div>
-                            <p className="text-[21px] font-bold text-[#2b1f1a]">Wants (30%)</p>
-                            <div className="w-full h-5 bg-[#2b1f1a]/15 rounded mt-1.5 border border-[#2b1f1a]/10"><div className="w-[45%] h-full bg-[#e9c46a] rounded border border-black/10"></div></div>
-                            <p className="text-[16px] text-red-700 font-bold mt-2" style={{ fontFamily: "'Caveat', cursive" }}>*Warning: Over allocated!</p>
-                          </div>
-                          <div>
-                            <p className="text-[21px] font-bold text-[#2b1f1a]">Savings (20%)</p>
-                            <div className="w-full h-5 bg-[#2b1f1a]/15 rounded mt-1.5 border border-[#2b1f1a]/10"><div className="w-[15%] h-full bg-[#264653] rounded border border-black/10"></div></div>
-                          </div>
-                        </div>
+                        <h3 className="font-serif text-[32px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-2 text-[#2b1f1a] mix-blend-multiply">Fixed Yield Assets</h3>
+                        <TranslatedSection 
+                          title="Term Deposit" 
+                          jargon="Capital allocation locked in fixed-tenure deposit certificates yielding 7.10% per annum, subject to early-withdrawal penal clauses." 
+                        />
+                        <TranslatedSection 
+                          title="Recurring Deposit" 
+                          jargon="Monthly compulsory amortization into interest-bearing time deposits, aggregating principal over predetermined periodic cycles." 
+                        />
+                        <TranslatedSection 
+                          title="Bonds & Debentures" 
+                          jargon="Fixed-income debt instruments amortizing over an eight-year maturity cycle with semi-annual coupon distribution." 
+                        />
                         <p className="absolute bottom-5 right-5 text-[15px] opacity-40 font-bold tracking-widest text-[#2b1f1a] mix-blend-multiply">PAGE 2</p>
                       </Page>
 
                       <Page number="3">
-                        <h3 className="font-serif text-[36px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-3 text-[#2b1f1a] mix-blend-multiply">Investments</h3>
-                        <p className="mt-5 text-[28px] text-[#2b1f1a] mix-blend-multiply" style={{ fontFamily: "'Caveat', cursive" }}>Diversification checks:</p>
-                        <ul className="list-disc pl-8 mt-5 opacity-90 text-[#2b1f1a] font-serif space-y-4 mix-blend-multiply text-[21px] leading-snug">
-                          <li>Nifty 50 Index Fund <b className="text-[#2a9d8f]">(Stable Core)</b>. Consistent growth.</li>
-                          <li>Sovereign Gold Bonds <b className="text-[#e9c46a]">(Hedge)</b>. Protection against inflation.</li>
-                          <li>Liquid Funds <b className="text-[#e76f51]">(Emergency)</b>. Highly accessible.</li>
-                        </ul>
+                        <h3 className="font-serif text-[32px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-2 text-[#2b1f1a] mix-blend-multiply">Market-Linked Wealth</h3>
+                        <TranslatedSection 
+                          title="Mutual Funds" 
+                          jargon="Systematic Investment Plans allocated 60/40 across large-cap equilibrium and short-duration debt structures, subject to NAV volatility." 
+                        />
+                        <TranslatedSection 
+                          title="ETFs" 
+                          jargon="Passively managed depository vehicles tracking the NIFTY 50 index with negligible expense ratios, facilitating broad market exposure." 
+                        />
                         <p className="absolute bottom-5 right-5 text-[15px] opacity-40 font-bold tracking-widest text-[#2b1f1a] mix-blend-multiply">PAGE 3</p>
                       </Page>
 
                       <Page number="4">
-                        <div className="flex flex-col items-center justify-center h-[90%] mix-blend-multiply">
-                          <h3 className="font-serif text-[45px] font-bold text-[#2b1f1a]">End of Report</h3>
-                          <p className="mt-5 text-[30px] text-[#2b1f1a]" style={{ fontFamily: "'Caveat', cursive" }}>Great job this week!</p>
-                          <div className="mt-16 w-28 h-28 border-[4px] border-[#2b1f1a]/30 rounded-full flex items-center justify-center opacity-60">
-                            <span className="font-serif font-bold text-4xl">✔</span>
-                          </div>
-                        </div>
+                        <h3 className="font-serif text-[32px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-2 text-[#2b1f1a] mix-blend-multiply">Safety Nets</h3>
+                        <TranslatedSection 
+                          title="Insurance Policies" 
+                          jargon="Comprehensive term life contingencies hedging against mortality risk with high sum-assured multipliers relative to annualized premium outlays." 
+                        />
+                        <TranslatedSection 
+                          title="ULIP" 
+                          jargon="A hybrid structured product allocating partial premium towards mortality hedging while deploying the residual corpus into equity-linked NAVs." 
+                        />
                         <p className="absolute bottom-5 right-5 text-[15px] opacity-40 font-bold tracking-widest text-[#2b1f1a] mix-blend-multiply">PAGE 4</p>
+                      </Page>
+
+                      <Page number="5">
+                        <h3 className="font-serif text-[32px] font-bold border-b-[3px] border-double border-[#2b1f1a]/30 pb-2 text-[#2b1f1a] mix-blend-multiply">Credit & Liabilities</h3>
+                        <TranslatedSection 
+                          title="Credit Cards" 
+                          jargon="Unsecured revolving credit facilities operating on a 30-day interest-free billing cycle prior to extreme APR penal compound generation." 
+                        />
+                        <TranslatedSection 
+                          title="Loan Folders" 
+                          jargon="Secured amortizing debt obligations with front-loaded interest schedules and predefined equated monthly installment structures." 
+                        />
+                        <p className="absolute bottom-5 right-5 text-[15px] opacity-40 font-bold tracking-widest text-[#2b1f1a] mix-blend-multiply">PAGE 5</p>
                       </Page>
                     </HTMLFlipBook>
 
