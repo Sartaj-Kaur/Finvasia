@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowUpRight, Plus, QrCode, LogOut } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../api';
 import leatherImg from '../assets/leather.jpg';
 
 export function Wallet() {
   const [isOpen, setIsOpen] = useState(false);
   const { currentUser } = useAuth();
+  const [balance, setBalance] = useState(24500);
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+        fetchApi(`/binder/${currentUser.uid}`)
+            .then(data => { if (data.user?.income) setBalance(data.user.income); })
+            .catch(console.error);
+
+        fetchApi(`/transactions/${currentUser.uid}`)
+            .then(data => { if (data.transactions) setTransactions(data.transactions.slice(0, 5)); })
+            .catch(console.error);
+    }
+  }, [currentUser]);
 
   return (
     <>
@@ -58,7 +73,7 @@ export function Wallet() {
               TOTAL BALANCE
             </div>
             <div className="absolute top-8 left-4 text-white font-serif font-bold text-lg tracking-wide">
-              ₹24,500
+              ₹{balance.toLocaleString()}
             </div>
             <div className="absolute bottom-4 right-4">
               <div className="w-8 h-6 rounded bg-gradient-to-br from-[#ffd700] to-[#b8860b] border border-[#daa520] opacity-80 shadow-inner"></div>
@@ -158,7 +173,7 @@ export function Wallet() {
                     <div className="mb-10">
                       <h3 className="text-white/60 text-[13px] font-bold mb-1 uppercase tracking-widest border-b border-white/10 pb-2 inline-block">Total Balance</h3>
                       <div className="font-serif text-[48px] leading-tight font-bold tracking-tight drop-shadow-md mt-4">
-                        ₹24,500
+                        ₹{balance.toLocaleString()}
                       </div>
                       <div className="mt-2 text-green-400 text-[15px] font-semibold tracking-wide flex items-center drop-shadow-sm">
                         +₹4,200 this month
@@ -233,13 +248,25 @@ export function Wallet() {
                     <div className="flex-1">
                       <h3 className="text-[#e6d0a7]/60 text-[13px] font-bold mb-5 uppercase tracking-widest border-b border-black/30 pb-2 inline-block">Recent Ledger</h3>
                       <div className="space-y-3">
-                        {[
+                        {transactions.length > 0 ? transactions.map((tx, i) => (
+                          <div key={i} className="flex items-center justify-between p-4 bg-black/10 hover:bg-black/20 backdrop-blur-sm rounded-xl border border-white/[0.03] transition-colors cursor-pointer group">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-[42px] h-[42px] rounded-lg bg-black/30 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform border border-white/[0.02]">
+                                {tx.category === 'food' ? '🍔' : '🛍️'}
+                              </div>
+                              <span className="font-medium text-[15px] text-white/90 tracking-wide">{tx.merchant}</span>
+                            </div>
+                            <span className={`font-semibold text-[16px] tracking-wide drop-shadow-sm text-white/90`}>
+                              -₹{Math.abs(tx.amount).toLocaleString()}
+                            </span>
+                          </div>
+                        )) : [
                           { title: 'Starbucks Coffee', amount: '-₹350', emoji: '☕' },
                           { title: 'Amazon Shopping', amount: '-₹4,200', emoji: '🛍️' },
                           { title: 'Dividends', amount: '+₹1,500', emoji: '📈', positive: true },
                           { title: 'Monager Cloud', amount: '-₹1,200', emoji: '☁️' }
                         ].map((tx, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 bg-black/10 hover:bg-black/20 backdrop-blur-sm rounded-xl border border-white/[0.03] transition-colors cursor-pointer group">
+                          <div key={`mock-${i}`} className="flex items-center justify-between p-4 bg-black/10 hover:bg-black/20 backdrop-blur-sm rounded-xl border border-white/[0.03] transition-colors cursor-pointer group">
                             <div className="flex items-center space-x-4">
                               <div className="w-[42px] h-[42px] rounded-lg bg-black/30 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform border border-white/[0.02]">
                                 {tx.emoji}

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../api';
 import {
   Plane, Sparkles, TrendingUp, TrendingDown, AlertCircle,
   Target, Plus, BarChart2, Shield, Calculator, CheckCircle2, X
@@ -37,7 +39,7 @@ const HeroGoalSection = ({ month, year }) => (
   </motion.div>
 );
 
-const AutoMoneyFlow = () => {
+const AutoMoneyFlow = ({ insights }) => {
   const [particles, setParticles] = useState([]);
   const trigger = () => {
     const ps = Array.from({ length: 12 }).map((_, i) => ({
@@ -54,7 +56,7 @@ const AutoMoneyFlow = () => {
       <h3 className="text-2xl font-bold font-serif text-emerald-950 italic flex items-center gap-2 mb-1">
         Automagic Flow <Sparkles size={22} className="text-emerald-700" />
       </h3>
-      <p className="text-lg font-sans text-slate-700 mb-3">Saved <span className="font-bold line-through opacity-50">₹800</span> from dining.</p>
+      <p className="text-lg font-sans text-slate-700 mb-3">Saved <span className="font-bold line-through opacity-50">₹800</span> from {insights?.top_category || 'dining'}.</p>
       <div className="relative inline-block">
         <button onClick={trigger}
           className="px-5 py-2 bg-emerald-100 border-2 border-emerald-900 font-black text-base shadow-[2px_2px_0_rgba(6,78,59,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
@@ -126,9 +128,11 @@ const PredictionGraph = () => {
   );
 };
 
-const MoneyIntelligence = () => {
+const MoneyIntelligence = ({ insights }) => {
   const [dismissed, setDismissed] = useState([]);
   const [applied, setApplied]   = useState([]);
+  const expectedSpend = insights?.simulated_value ? `₹${(insights.simulated_value / 12).toFixed(0)}` : '₹2,300';
+  const moodAlert = insights?.mood_summary?.stressed > insights?.mood_summary?.happy ? '⚠ Correlated stress spending detected' : '⚠ Lifestyle budget at risk';
 
   return (
     <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-hidden pt-2">
@@ -163,8 +167,8 @@ const MoneyIntelligence = () => {
           7-Day Prediction
         </h3>
         <p className="text-xl font-sans text-slate-700 mb-2">
-          Expected spend: <span className="font-black text-slate-900">₹2,300</span>
-          <span className="ml-3 text-sm text-amber-700 font-bold">⚠ Lifestyle budget at risk</span>
+          Expected spend: <span className="font-black text-slate-900">{expectedSpend}</span>
+          <span className="ml-3 text-sm text-amber-700 font-bold">{moodAlert}</span>
         </p>
         <PredictionGraph />
       </div>
@@ -276,8 +280,9 @@ const GoalsPage = () => {
 // INVEST TAB
 // ─────────────────────────────────────────────
 
-const InvestPage = () => {
-  const data = [22000, 25000, 23000, 28000, 32000, 30000, 38000];
+const InvestPage = ({ insights }) => {
+  const total = insights?.investment_total || 38000;
+  const data = [22000, 25000, 23000, 28000, 32000, 30000, Math.max(38000, total)];
   const max = Math.max(...data); const min = Math.min(...data);
   const W = 300; const H = 100;
   const pts = data.map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / (max - min)) * H}`).join(' ');
@@ -289,7 +294,7 @@ const InvestPage = () => {
       <div className="flex gap-6 shrink-0">
         <div>
           <p className="text-base uppercase tracking-widest text-slate-500 font-bold">Total Invested</p>
-          <p className="text-5xl font-black font-sans text-slate-900">₹38,000</p>
+          <p className="text-5xl font-black font-sans text-slate-900">₹{total.toLocaleString()}</p>
         </div>
         <div className="border-l-2 border-dotted border-slate-400 pl-6">
           <p className="text-base uppercase tracking-widest text-emerald-600 font-bold">+Growth</p>
@@ -339,7 +344,12 @@ const InvestPage = () => {
 // ENVELOPE RECEIPTS
 // ─────────────────────────────────────────────
 
-const EnvelopeReceipts = ({ envelopeOpen, setEnvelopeOpen }) => (
+const EnvelopeReceipts = ({ envelopeOpen, setEnvelopeOpen, txns }) => {
+  const list = txns && txns.length > 0
+      ? txns.map(t => `${t.merchant.toUpperCase()} ₹${t.amount}`)
+      : ['UBER ₹230','SWIGGY ₹450','AMAZON ₹1499'];
+
+  return (
   <div className="absolute top-3 right-3 z-[50]">
     <motion.div
       animate={{ rotate: envelopeOpen ? 10 : 2 }}
@@ -351,7 +361,7 @@ const EnvelopeReceipts = ({ envelopeOpen, setEnvelopeOpen }) => (
         <div className="absolute top-0 left-0 w-full h-3 bg-slate-300/40 -skew-y-2 origin-top-left" />
         <p className="text-xl font-bold font-serif tracking-widest mix-blend-multiply text-slate-800 relative z-10">RECEIPTS</p>
         <AnimatePresence>
-          {envelopeOpen && ['UBER ₹230','SWIGGY ₹450','AMAZON ₹1499'].map((r, i) => (
+          {envelopeOpen && list.map((r, i) => (
             <motion.div key={r}
               initial={{ y: -30, x: 0, opacity: 0, rotate: 0 }}
               animate={{ y: 40 + i * 55, x: [-120, -10, 70][i], opacity: 1, rotate: [-20, 12, -5][i] }}
@@ -368,7 +378,7 @@ const EnvelopeReceipts = ({ envelopeOpen, setEnvelopeOpen }) => (
       </div>
     </motion.div>
   </div>
-);
+)};
 
 // ─────────────────────────────────────────────
 // ROOT EXPORT
@@ -376,6 +386,17 @@ const EnvelopeReceipts = ({ envelopeOpen, setEnvelopeOpen }) => (
 
 export default function RightPageUI({ isOpen, activeTab, month, year }) {
   const [envelopeOpen, setEnvelopeOpen] = useState(false);
+  const { currentUser } = useAuth();
+  const [insights, setInsights] = useState(null);
+  const [txns, setTxns] = useState([]);
+  
+  useEffect(() => {
+     if (currentUser?.uid && isOpen) {
+         fetchApi(`/insights/summary/${currentUser.uid}`).then(setInsights).catch(console.error);
+         fetchApi(`/transactions/${currentUser.uid}`).then(res => setTxns(res?.transactions?.slice(0,3) || [])).catch(console.error);
+     }
+  }, [currentUser, isOpen]);
+
   if (!isOpen) return null;
 
   const isBudgetTab = !activeTab || activeTab === 'BUDGET';
@@ -394,15 +415,15 @@ export default function RightPageUI({ isOpen, activeTab, month, year }) {
           className="w-full h-full"
         >
           {activeTab === 'GOALS'  && <GoalsPage />}
-          {activeTab === 'INVEST' && <InvestPage />}
+          {activeTab === 'INVEST' && <InvestPage insights={insights} />}
 
           {isBudgetTab && (
             <>
-              <EnvelopeReceipts envelopeOpen={envelopeOpen} setEnvelopeOpen={setEnvelopeOpen} />
+              <EnvelopeReceipts envelopeOpen={envelopeOpen} setEnvelopeOpen={setEnvelopeOpen} txns={txns} />
               <div className="w-full h-full p-8 flex flex-col gap-4 pr-5 overflow-hidden">
                 <HeroGoalSection month={month} year={year} />
-                <AutoMoneyFlow />
-                <MoneyIntelligence />
+                <AutoMoneyFlow insights={insights} />
+                <MoneyIntelligence insights={insights} />
               </div>
             </>
           )}

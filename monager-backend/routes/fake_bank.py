@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from database import supabase
+from utils import format_uid
 import uuid
 import random
 from datetime import datetime, timedelta
@@ -18,6 +19,7 @@ MERCHANTS = {
 
 @router.post("/{user_id}/inject-data")
 async def inject_fake_data(user_id: str):
+    user_id = format_uid(user_id)
     # Fetch user to get their income
     user_res = supabase.table('users').select('income').eq('id', user_id).execute()
     if not user_res.data:

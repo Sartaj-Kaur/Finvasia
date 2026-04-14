@@ -1,66 +1,63 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import {
+  View, Text, TouchableOpacity, SafeAreaView,
+  ActivityIndicator, StyleSheet, Platform, StatusBar
+} from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated';
+import { fetchApi } from '../../utils/api';
+import { C } from '../../constants/Theme';
+import { BgShapes } from '../../components/ui/BgShapes';
 
 export default function Step3Bank() {
-  const { completeOnboarding } = useAuth();
+  const { completeOnboarding, currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     setLoading(true);
-    setTimeout(() => { completeOnboarding(); }, 2500);
+    try {
+      if (currentUser && currentUser.uid) {
+        await fetchApi(`/fake-bank/${currentUser.uid}/inject-data`, { method: 'POST' });
+      }
+    } catch (e) {
+      console.error("Error connecting bank:", e);
+    } finally {
+      completeOnboarding();
+    }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-paper">
-      <View className="flex-1 justify-center p-8">
+    <SafeAreaView style={s.safe}>
+      <BgShapes variant="auth" />
+      <View style={s.container}>
 
         {!loading ? (
-          <Animated.View entering={FadeInUp} exiting={FadeOut}>
+          <Animated.View entering={FadeInUp} exiting={FadeOut} style={s.content}>
             {/* Document stack visual */}
-            <View className="items-center mb-12 h-24 justify-center">
-              <View style={{
-                width: 60, height: 76, backgroundColor: '#EDE0C8',
-                borderWidth: 1, borderColor: '#D4C4B0', position: 'absolute',
-                borderRadius: 6, transform: [{ rotate: '-14deg' }, { translateX: -22 }],
-              }} />
-              <View style={{
-                width: 60, height: 76, backgroundColor: '#F5EFE3',
-                borderWidth: 1, borderColor: '#D4C4B0', position: 'absolute',
-                borderRadius: 6, transform: [{ rotate: '9deg' }, { translateX: 22 }],
-              }} />
+            <View style={s.visualContainer}>
+              <View style={[s.docBase, s.docBack]} />
+              <View style={[s.docBase, s.docFront]} />
             </View>
 
-            <Text className="font-serif text-3xl text-walnut mb-4 text-center">Read-Only Access</Text>
-            <Text style={{ fontSize: 15, color: '#A89070', lineHeight: 24, textAlign: 'center', marginBottom: 40 }}>
-              Monager needs to analyze the last 90 days of transactions to build your passive intelligence model.
+            <Text style={s.title}>Read-Only Access</Text>
+            <Text style={s.description}>
+              Monager analyzes your last 90 days of transactions to build your passive intelligence model.
               We use Setu (AA) to securely sync your ledger without ever seeing your credentials.
             </Text>
 
             <TouchableOpacity
-              style={{
-                backgroundColor: '#C1673A',
-                paddingVertical: 18,
-                borderRadius: 14,
-                alignItems: 'center',
-                shadowColor: '#C1673A',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 10,
-                elevation: 5,
-              }}
+              style={s.primaryBtn}
               onPress={handleConnect}
               activeOpacity={0.85}
             >
-              <Text style={{ color: '#F5EFE3', fontWeight: '700', fontSize: 17, letterSpacing: 0.3 }}>Sync via Setu</Text>
+              <Text style={s.primaryBtnText}>Sync via Setu</Text>
             </TouchableOpacity>
           </Animated.View>
         ) : (
-          <Animated.View entering={FadeInUp} className="items-center">
-            <ActivityIndicator size="large" color="#C1673A" style={{ marginBottom: 20 }} />
-            <Text className="font-serif text-2xl text-walnut mb-2">Fetching Ledger...</Text>
-            <Text style={{ fontSize: 14, color: '#A89070', fontStyle: 'italic' }}>Analyzing 3 months of noise...</Text>
+          <Animated.View entering={FadeInUp} style={s.loadingContainer}>
+            <ActivityIndicator size="large" color={C.terra} />
+            <Text style={s.loadingTitle}>Fetching Ledger...</Text>
+            <Text style={s.loadingSub}>Analyzing 3 months of noise...</Text>
           </Animated.View>
         )}
 
@@ -68,3 +65,36 @@ export default function Step3Bank() {
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  container: { flex: 1, paddingHorizontal: 32, justifyContent: 'center' },
+  content: { alignItems: 'center' },
+  visualContainer: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center', marginBottom: 40 },
+  docBase: {
+    width: 60, height: 76, borderRadius: 8, borderWidth: 2, position: 'absolute',
+  },
+  docBack: {
+    backgroundColor: C.terra + '20', borderColor: C.terra + '40',
+    transform: [{ rotate: '-12deg' }, { translateX: -15 }],
+  },
+  docFront: {
+    backgroundColor: C.surface, borderColor: '#FFFFFF',
+    transform: [{ rotate: '8deg' }, { translateX: 15 }],
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
+  },
+  title: { fontSize: 28, fontWeight: '800', color: C.surfaceHigh, marginBottom: 16, textAlign: 'center' },
+  description: {
+    fontSize: 15, color: C.creamDim, lineHeight: 24, textAlign: 'center',
+    marginBottom: 48, fontWeight: '500',
+  },
+  primaryBtn: {
+    backgroundColor: C.terra, borderRadius: 16, paddingVertical: 20, paddingHorizontal: 40,
+    width: '100%', alignItems: 'center',
+    shadowColor: C.terra, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  primaryBtnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 17, letterSpacing: 0.3 },
+  loadingContainer: { alignItems: 'center' },
+  loadingTitle: { fontSize: 24, fontWeight: '800', color: C.surfaceHigh, marginTop: 24, marginBottom: 8 },
+  loadingSub: { fontSize: 14, color: C.creamDim, fontStyle: 'italic', fontWeight: '500' },
+});

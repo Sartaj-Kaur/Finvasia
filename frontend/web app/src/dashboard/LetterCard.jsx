@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import paperImg from '../assets/paper.jpg';
+import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../api';
 
 const MONTH_NAMES = [
   'January','February','March','April','May','June',
@@ -51,6 +53,17 @@ export function LetterCard() {
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  const { currentUser } = useAuth();
+  const [liveLetter, setLiveLetter] = useState(null);
+
+  useEffect(() => {
+      if (currentUser?.uid) {
+          fetchApi(`/letter/${currentUser.uid}`)
+            .then(data => setLiveLetter(data?.content))
+            .catch(console.error);
+      }
+  }, [currentUser]);
 
   const handleSealClick = (e) => {
     e.stopPropagation();
@@ -102,7 +115,8 @@ export function LetterCard() {
   const isAtStart = selectedYear <= currentYear - 2 && validMonth === 0;
   const isAtEnd = selectedYear === currentYear && validMonth === currentMonth;
 
-  const letter = LETTERS[validMonth] || LETTERS[0];
+  const letterFallback = LETTERS[validMonth] || LETTERS[0];
+  const letter = liveLetter ? { title: `Intelligence Dispatch`, body: [liveLetter] } : letterFallback;
   const availableYears = Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
 
   return (

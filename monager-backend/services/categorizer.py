@@ -3,6 +3,9 @@ def categorize(narration: str) -> str:
     Categorize a transaction based on the narration string.
     Categories: food, subscriptions, transport, essentials, lifestyle
     """
+    if not narration:
+        return "lifestyle"
+        
     # Normalize narration for case-insensitive matching
     lower_narration = narration.lower()
     

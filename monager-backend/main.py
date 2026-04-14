@@ -10,6 +10,7 @@ from routes.transactions import router as transactions_router
 from routes.investment import router as investment_router
 from routes.quiz import router as quiz_router
 from routes.fake_bank import router as fake_bank_router
+from routes.users import router as users_router
 
 app = FastAPI(title="Monager Backend API")
 
@@ -30,6 +31,7 @@ app.include_router(transactions_router, prefix="/api")
 app.include_router(investment_router, prefix="/api")
 app.include_router(quiz_router, prefix="/api")
 app.include_router(fake_bank_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 
 @app.get("/")
 def health_check():

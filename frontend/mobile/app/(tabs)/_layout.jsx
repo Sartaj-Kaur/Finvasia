@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { View, Platform } from 'react-native';
 import { C } from '../../constants/Theme';
 
@@ -13,50 +13,53 @@ export default function TabLayout() {
         tabBarInactiveTintColor: C.tabInactive,
         tabBarStyle: {
           backgroundColor: C.tabBg,
-          borderTopWidth: 1,
-          borderTopColor: C.border,
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-          paddingTop: 10,
-          elevation: 0,
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
+          height: Platform.OS === 'ios' ? 108 : 88,
+          paddingBottom: Platform.OS === 'ios' ? 42 : 22,
+          paddingTop: 18,
+          elevation: 20,
           position: 'absolute',
-          bottom: 20,
-          left: 20,
-          right: 20,
-          borderRadius: 22,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          borderTopLeftRadius: 36,
+          borderTopRightRadius: 36,
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.4,
-          shadowRadius: 16,
+          shadowOffset: { width: 0, height: -10 },
+          shadowOpacity: 0.15,
+          shadowRadius: 20,
         },
         tabBarShowLabel: false,
       }}>
 
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} /> }}
+        options={{ tabBarIcon: ({ color }) => <Feather name="grid" size={24} color={color} /> }}
       />
       <Tabs.Screen
         name="activity"
-        options={{ tabBarIcon: ({ color }) => <FontAwesome name="line-chart" size={22} color={color} /> }}
+        options={{ tabBarIcon: ({ color }) => <Feather name="pie-chart" size={24} color={color} /> }}
       />
       <Tabs.Screen
         name="scan"
         options={{
           tabBarIcon: () => (
             <View style={{
-              backgroundColor: C.terra, width: 52, height: 52, borderRadius: 26,
-              justifyContent: 'center', alignItems: 'center', marginBottom: 16,
-              shadowColor: C.terra, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10,
+              backgroundColor: C.green, width: 56, height: 56, borderRadius: 28,
+              justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+              shadowColor: C.green, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8,
             }}>
-              <FontAwesome name="camera" size={20} color={C.cream} />
+              <Feather name="maximize" size={24} color={C.tabBg} />
             </View>
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ color }) => <FontAwesome name="user" size={22} color={color} /> }}
+        options={{ tabBarIcon: ({ color }) => <Feather name="user" size={24} color={color} /> }}
       />
     </Tabs>
   );

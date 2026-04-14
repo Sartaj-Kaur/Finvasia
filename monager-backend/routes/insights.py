@@ -3,8 +3,11 @@ from database import supabase
 from services.investment import get_portfolio_value
 from services.llm_context import build_user_context
 from services.memory import embed_and_store_memory
+from utils import format_uid
 from google import genai
 import os
+import uuid
+from datetime import datetime
 
 router = APIRouter(prefix="/insights", tags=["Insights"])
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -18,6 +21,7 @@ async def get_insights_summary(user_id: str):
     """
     Returns insights summary including percentages and monager_observation.
     """
+    user_id = format_uid(user_id)
     # 1. Binder sections and percentages
     sections_res = supabase.table('binder_sections').select('*').eq('user_id', user_id).execute()
     sections = []
@@ -61,13 +65,9 @@ async def get_insights_summary(user_id: str):
         "monager_observation": observation
     }
 
-@router.post("/sticky-note/{user_id}")
-async def generate_sticky_note(user_id: str):
-    """
-    Generates a randomized, archetype-aware brief insight "sticky note".
-    """
+async def _generate_sticky_note(user_id: str):
     if not client:
-        return {"error": "GEMINI_API_KEY not configured."}
+        return "GEMINI_API_KEY not configured."
         
     user_context = build_user_context(user_id)
     
@@ -76,7 +76,7 @@ async def generate_sticky_note(user_id: str):
     Context:
     {user_context}
     
-    Task: Write a very short (1-2 sentences max) "sticky note" to the user. It should sound like a quick post-it note left on their desk. Be highly personal based on their archetype tone. Pick one randomness element to focus on: either their recent mood, a specific recent transaction, or their overall budget pace. Do NOT greet them, just write the note.
+    Task: Write a very short (1-2 sentences max) "sticky note" to the user. It should sound like a quick post-it note left on their desk. Be highly personal based on their archetype tone. Pick one randomness element to focus on: a specific recent transaction they just made, their recent mood, or their overall budget pace. Do NOT greet them, just write the note.
     """
     
     response = client.models.generate_content(
@@ -86,7 +86,28 @@ async def generate_sticky_note(user_id: str):
     
     note_text = response.text.strip() if response and response.text else "Keep an eye on that budget today!"
     
+    # Save to UI database table
+    try:
+        supabase.table("sticky_notes").insert({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "content": note_text,
+            "condition_triggered": "dynamic_ai",
+            "created_at": datetime.utcnow().isoformat()
+        }).execute()
+    except Exception as e:
+        print("Failed to save sticky note:", e)
+        
     # Embed and store
     await embed_and_store_memory(user_id, note_text, memory_type="sticky_note")
     
+    return note_text
+
+@router.post("/sticky-note/{user_id}")
+async def generate_sticky_note(user_id: str):
+    """
+    Generates a new AI sticky note based on recent activity.
+    """
+    user_id = format_uid(user_id)
+    note_text = await _generate_sticky_note(user_id)
     return {"note": note_text}

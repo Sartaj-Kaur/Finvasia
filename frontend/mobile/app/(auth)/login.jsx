@@ -11,6 +11,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../../firebaseConfig';
 import { C } from '../../constants/Theme';
+import { BgShapes } from '../../components/ui/BgShapes';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -48,6 +49,7 @@ export default function LoginScreen() {
   const s = styles;
   return (
     <SafeAreaView style={s.safe}>
+      <BgShapes variant="auth" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
@@ -96,7 +98,7 @@ export default function LoginScreen() {
 
           <Animated.View entering={FadeInUp.delay(500).springify()}>
             <TouchableOpacity style={s.googleBtn} onPress={() => promptAsync()} disabled={!request} activeOpacity={0.85}>
-              <FontAwesome name="google" size={18} color={C.cream} style={{ marginRight: 12 }} />
+              <FontAwesome name="google" size={18} color={C.bg} style={{ marginRight: 12 }} />
               <Text style={s.googleBtnText}>Sign in with Google</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -110,8 +112,8 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
-  scroll: { paddingHorizontal: 24, paddingTop: 56 },
-  logoBlock: { alignItems: 'center', marginBottom: 44 },
+  scroll: { paddingHorizontal: 24, paddingTop: 32 },
+  logoBlock: { alignItems: 'center', marginBottom: 24 },
   logoCircle: {
     width: 80, height: 80, borderRadius: 40, backgroundColor: C.surface,
     borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center',
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, color: C.creamDim, marginBottom: 8 },
   input: {
     backgroundColor: C.surfaceHigh, borderWidth: 1, borderColor: C.border, borderRadius: 12,
-    paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: C.cream,
+    paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: C.bg,
   },
   primaryBtn: {
     backgroundColor: C.terra, borderRadius: 14, paddingVertical: 16, alignItems: 'center',
@@ -145,5 +147,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', backgroundColor: C.surfaceHigh, borderWidth: 1, borderColor: C.border,
     borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
   },
-  googleBtnText: { color: C.cream, fontWeight: '700', fontSize: 16 },
+  googleBtnText: { color: C.bg, fontWeight: '700', fontSize: 16 },
 });

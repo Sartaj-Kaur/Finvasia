@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../api';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -16,8 +18,15 @@ const TRANSACTIONS = [
 ];
 
 /** SECTION: 1. Huge Monthly Overview */
-const HugeMonthlyOverview = ({ month, year }) => {
+const HugeMonthlyOverview = ({ month, year, data }) => {
   const label = MONTHS[month] ? `${MONTHS[month]} Budget` : 'April Budget';
+  const income = data?.user?.income || 50000;
+  let spent = 32400;
+  if (data?.binder_sections) {
+      spent = data.binder_sections.reduce((acc, sec) => acc + sec.amount_spent, 0);
+  }
+  const left = income - spent;
+  const pct = income > 0 ? (spent / income) * 100 : 0;
   return (
     <motion.div 
       initial={{ opacity: 0, y: 15 }}
@@ -30,24 +39,24 @@ const HugeMonthlyOverview = ({ month, year }) => {
       <div className="flex w-full justify-between items-end mb-4 px-2">
         <div>
           <p className="text-xl uppercase tracking-widest font-sans font-bold text-[var(--color-text-muted)] mb-1">Income</p>
-          <p className="text-4xl md:text-5xl font-sans font-black tracking-tight text-emerald-950">₹50,000</p>
+          <p className="text-4xl md:text-5xl font-sans font-black tracking-tight text-emerald-950">₹{income.toLocaleString()}</p>
         </div>
         <div className="text-right">
           <p className="text-xl uppercase tracking-widest font-sans font-bold text-[var(--color-text-muted)] mb-1">Spent</p>
-          <p className="text-4xl md:text-5xl font-sans font-black tracking-tight text-rose-950">₹32,400</p>
+          <p className="text-4xl md:text-5xl font-sans font-black tracking-tight text-rose-950">₹{spent.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Liquid Ink Full Width Bar */}
       <div className="w-full relative mt-2 mb-4">
-        <p className="absolute -top-6 right-2 text-xl font-bold font-serif italic text-[var(--color-text-main)]">Left: ₹17,600</p>
+        <p className="absolute -top-6 right-2 text-xl font-bold font-serif italic text-[var(--color-text-main)]">Left: ₹{left.toLocaleString()}</p>
         
         {/* Empty Trough */}
         <div className="w-full h-10 md:h-12 border-[3px] border-[var(--color-text-muted)] rounded-sm relative overflow-hidden" style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(0,0,0,0.05) 15px, rgba(0,0,0,0.05) 30px)' }}>
           {/* Liquid Ink Fill */}
           <motion.div 
             initial={{ width: '0%' }}
-            animate={{ width: '64.8%' }}
+            animate={{ width: `${pct.toFixed(1)}%` }}
             transition={{ delay: 0.4, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
             className="h-full bg-blue-900/60 relative overflow-hidden"
           >
@@ -65,7 +74,7 @@ const HugeMonthlyOverview = ({ month, year }) => {
           </motion.div>
           {/* Stamp Text Overlay */}
           <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
-            <p className="text-2xl font-serif font-black italic text-slate-800/90 tracking-widest mix-blend-color-burn">64.8% CONSUMED</p>
+            <p className="text-2xl font-serif font-black italic text-slate-800/90 tracking-widest mix-blend-color-burn">{pct.toFixed(1)}% CONSUMED</p>
           </div>
         </div>
       </div>
@@ -75,13 +84,20 @@ const HugeMonthlyOverview = ({ month, year }) => {
 
 
 /** SECTION: 2. Massive Category Strokes */
-const LargeCategories = () => (
+const LargeCategories = ({ data }) => {
+  const list = data?.binder_sections && data.binder_sections.length > 0 
+      ? data.binder_sections.slice(0, 3).map((s, i) => ({
+          id: s.id || i, name: s.category, allocated: s.allocated_budget, spent: s.amount_spent, color: ['#1e3a8a','#be123c','#4c1d95'][i] || '#4c1d95'
+      })) 
+      : CATEGORIES;
+
+  return (
   <div className="flex flex-col w-full gap-4 mix-blend-multiply z-10 py-6 border-t-[3px] border-dotted border-[var(--color-text-muted)] border-b-[3px] flex-1 min-h-0 relative before:content-[''] before:absolute before:inset-0 before:bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxjaXJjbGUgY3g9IjIiIGN5PSIyIiByPSIxIiBmaWxsPSJyZ2JhKDAsMCwwLDAuMSkiLz48L3N2Zz4=')] before:-z-10 before:opacity-20">
     <h3 className="text-3xl font-bold font-serif text-[var(--color-text-main)] mb-2 italic">Budget Breakdown</h3>
     
     <div className="flex flex-col justify-around h-full gap-2">
-      {CATEGORIES.map((cat, i) => {
-        const pct = (cat.spent / cat.allocated) * 100;
+      {list.map((cat, i) => {
+        const pct = cat.allocated > 0 ? (cat.spent / cat.allocated) * 100 : 0;
         return (
           <motion.div 
             key={cat.id}
@@ -115,11 +131,16 @@ const LargeCategories = () => (
       })}
     </div>
   </div>
-);
+)};
 
 
 /** SECTION: 3. Handwritten Ruled Transactions */
-const RuledTransactionsList = () => (
+const RuledTransactionsList = ({ txns }) => {
+  const list = txns && txns.length > 0
+    ? txns.map((t, i) => ({ id: t.id || i, name: t.merchant, amt: `₹${t.amount}`, date: new Date(t.date).toLocaleDateString(undefined, {month:'short', day:'numeric'}) }))
+    : TRANSACTIONS;
+
+  return (
   <div className="flex flex-col w-full relative pt-4 pb-2 z-10 shrink-0 h-[22%]">
     {/* Ruled Paper Background Lines */}
     <div className="absolute inset-0" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 35px, rgba(148, 163, 184, 0.4) 35px, rgba(148, 163, 184, 0.4) 36px)', backgroundPositionY: '2px' }} />
@@ -129,7 +150,7 @@ const RuledTransactionsList = () => (
     </div>
 
     <div className="flex flex-col h-full justify-between mt-2">
-      {TRANSACTIONS.map((txn, i) => (
+      {list.map((txn, i) => (
         <motion.div 
           key={txn.id}
           initial={{ opacity: 0, rotate: -2, y: 10 }}
@@ -144,17 +165,28 @@ const RuledTransactionsList = () => (
       ))}
     </div>
   </div>
-);
+)};
 
 
 export default function LeftPageUI({ isOpen, month, year }) {
+  const { currentUser } = useAuth();
+  const [data, setData] = useState(null);
+  const [txn, setTxn] = useState([]);
+
+  useEffect(() => {
+      if (currentUser?.uid && isOpen) {
+          fetchApi(`/binder/${currentUser.uid}`).then(setData).catch(console.error);
+          fetchApi(`/transactions/${currentUser.uid}`).then(res => setTxn(res?.transactions?.slice(0, 3) || [])).catch(console.error);
+      }
+  }, [currentUser, isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="w-full h-full p-10 pr-14 flex flex-col justify-between overflow-hidden relative" style={{ gap: '1rem' }}>
-      <HugeMonthlyOverview month={month} year={year} />
-      <LargeCategories />
-      <RuledTransactionsList />
+      <HugeMonthlyOverview month={month} year={year} data={data} />
+      <LargeCategories data={data} />
+      <RuledTransactionsList txns={txn} />
     </div>
   );
 }

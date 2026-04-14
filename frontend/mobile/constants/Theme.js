@@ -1,33 +1,29 @@
-// Monager Pocket — Ink & Vellum Design System
-// Palette: aged vellum paper · walnut ink · terracotta accents · dried-moss green
+// Monager Pocket — Health-Tech Pastel Design System
+// Palette: Dark Teal · Lavender · Bright Lime · Pure White
 
 export const C = {
   // ── Backgrounds ──────────────────────────────────────────────────────────────
-  bg:          '#1C1714',   // Walnut ink — not pure black, has brown warmth
-  surface:     '#252018',   // One shade up — like old parchment under low light
-  surfaceHigh: '#2E2820',   // Elevated cards — subtle warmth
-  border:      '#3C3128',   // Quiet dividers — walnut grain
+  bg:          '#FFFFFF',   // Pure White main background
+  surface:     '#F5F7F6',   // Soft minty-grey for cards
+  surfaceHigh: '#1A3631',   // Dark Slate Teal (Headers/Tabbar)
+  border:      '#EAECEB',   // Soft faint borders, mostly unused now
 
   // ── Text ─────────────────────────────────────────────────────────────────────
-  cream:       '#EDE0C8',   // Aged vellum — slightly yellow, not pure white
-  creamDim:    '#A89070',   // Faded ink, readable secondary text
-  creamFaint:  '#60483A',   // Ghost text / labels — like pencil on paper
+  cream:       '#1A3631',   // Dark Teal text for main headings on white
+  creamDim:    '#687B77',   // Faded teal-grey for subtitles
+  creamFaint:  '#A0ABA8',   // Ghost labels
 
-  // ── Primary Accent ───────────────────────────────────────────────────────────
-  // Terracotta / burnt sienna — warm, human, not AI-gold
-  terra:       '#C1673A',   // Primary CTA — terracotta
-
-  // ── Secondary Accent ─────────────────────────────────────────────────────────
-  sand:        '#D4A96A',   // Warm sand — secondary highlights (replaces "gold")
-
-  // ── Semantic ─────────────────────────────────────────────────────────────────
-  // None of these are the flat stock semantic colors
-  green:       '#5A8A68',   // Dried moss — calm, not neon success
-  red:         '#A84040',   // Aged crimson — warning, not alarming
-  blue:        '#4A6E8A',   // Steel-blue — informational, muted
+  // ── Primary Accents ──────────────────────────────────────────────────────────
+  terra:       '#A58BFA',   // Richer Lavender (Improved contrast)
+  sand:        '#34D399',   // Saturated Mint (Improved contrast)
+  
+  // ── Semantic & Pops ─────────────────────────────────────────────────────────
+  green:       '#10B981',   // Emerald Green (High visibility on white)
+  red:         '#EF4444',   // Strong Coral Red
+  blue:        '#60A5FA',   // Solid Pastel Blue
 
   // ── Tab Bar ──────────────────────────────────────────────────────────────────
-  tabBg:       '#201A15',   // Slightly darker than bg — leather-like
-  tabActive:   '#C1673A',   // Terra for active state
-  tabInactive: '#60483A',   // Ghost ink for inactive
+  tabBg:       '#1A3631',   // Dark Slate Teal
+  tabActive:   '#CEFB67',   // Keep bright lime for Tab active since it's on dark teal
+  tabInactive: '#687B77',   // Faded text
 };

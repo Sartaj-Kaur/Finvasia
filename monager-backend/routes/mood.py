@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from fastapi import APIRouter
 from models import MoodLogRequest
 from database import supabase
+from utils import format_uid
 
 router = APIRouter(prefix="/mood", tags=["Mood"])
 
@@ -14,7 +15,7 @@ async def log_mood(mood_req: MoodLogRequest):
     If mood is "stressed", check if today's food or lifestyle spend is above daily average.
     If so, create sticky note.
     """
-    user_id = mood_req.user_id
+    user_id = format_uid(mood_req.user_id)
     mood = mood_req.mood
     
     # Store mood
@@ -23,7 +24,7 @@ async def log_mood(mood_req: MoodLogRequest):
         'id': mood_entry_id,
         'user_id': user_id,
         'mood': mood,
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }).execute()
     
     created_note = None
@@ -61,7 +62,7 @@ async def log_mood(mood_req: MoodLogRequest):
                 'user_id': user_id,
                 'content': note_content,
                 'condition_triggered': 'stress_spend_detected',
-                'created_at': datetime.utcnow().isoformat()
+                'created_at': datetime.now(timezone.utc).isoformat()
             }).execute()
             created_note = note_content
             

@@ -1,55 +1,96 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, Platform, StatusBar } from 'react-native';
+import {
+  View, Text, TextInput, TouchableOpacity, SafeAreaView,
+  Platform, StatusBar, StyleSheet, KeyboardAvoidingView, ScrollView
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { C } from '../../constants/Theme';
+import { BgShapes } from '../../components/ui/BgShapes';
 
 export default function Step1() {
   const [name, setName] = useState('');
   const [income, setIncome] = useState('');
   const router = useRouter();
 
+  const handleContinue = () => {
+    if (!name.trim() || !income.trim()) return;
+    router.push({
+      pathname: '/(onboarding)/step2-ocean',
+      params: { name: name.trim(), income: income.trim() }
+    });
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5EFE3', paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
-      <Animated.View entering={FadeInRight.delay(100).springify()} className="flex-1 justify-center p-8">
+    <SafeAreaView style={s.safe}>
+      <BgShapes variant="auth" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
 
-        <Text className="font-serif text-4xl text-walnut mb-3">Let's start{'\n'}the file.</Text>
-        <Text className="text-base text-fog mb-12">
-          What do you go by, and what's your monthly target?
-        </Text>
+          <Animated.View entering={FadeInDown.delay(100).springify()} style={s.content}>
+            <Text style={s.title}>Let's start{'\n'}the file.</Text>
+            <Text style={s.subtitle}>
+              What do you go by, and what's your approximate monthly target?
+            </Text>
 
-        <View className="mb-8">
-          <Text className="text-xs text-fog font-bold tracking-widest uppercase mb-3">Name</Text>
-          <TextInput
-            className="border-b border-hairline text-2xl text-walnut pb-3"
-            placeholder="e.g. Navya"
-            placeholderTextColor="#C9B89A"
-            value={name}
-            onChangeText={setName}
-          />
-        </View>
+            <View style={s.inputContainer}>
+              <Text style={s.label}>NAME</Text>
+              <TextInput
+                style={s.input}
+                placeholder="e.g. Navya"
+                placeholderTextColor={C.creamFaint}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
 
-        <View className="mb-10">
-          <Text className="text-xs text-fog font-bold tracking-widest uppercase mb-3">Monthly Income (₹)</Text>
-          <TextInput
-            className="border-b border-hairline text-2xl text-walnut pb-3"
-            placeholder="0"
-            keyboardType="numeric"
-            placeholderTextColor="#C9B89A"
-            value={income}
-            onChangeText={setIncome}
-          />
-        </View>
+            <View style={s.inputContainer}>
+              <Text style={s.label}>MONTHLY INCOME (₹)</Text>
+              <TextInput
+                style={s.input}
+                placeholder="0"
+                keyboardType="numeric"
+                placeholderTextColor={C.creamFaint}
+                value={income}
+                onChangeText={setIncome}
+              />
+            </View>
 
-        <TouchableOpacity
-          className="bg-terra py-5 rounded-xl items-center mt-6"
-          style={{ shadowColor: '#C1673A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 5 }}
-          onPress={() => router.push('/(onboarding)/step2-ocean')}
-          activeOpacity={0.85}
-        >
-          <Text className="text-paper font-bold text-base tracking-wide">Continue →</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.primaryBtn, (!name || !income) && s.disabledBtn]}
+              onPress={handleContinue}
+              activeOpacity={0.85}
+            >
+              <Text style={s.primaryBtnText}>Continue →</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-      </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 },
+  scroll: { flexGrow: 1, paddingHorizontal: 32, justifyContent: 'center' },
+  content: { paddingVertical: 40 },
+  title: { fontSize: 36, fontWeight: '900', color: C.surfaceHigh, letterSpacing: -0.5, lineHeight: 42, marginBottom: 12 },
+  subtitle: { fontSize: 16, color: C.creamDim, marginBottom: 48, lineHeight: 24, fontWeight: '500' },
+  inputContainer: { marginBottom: 32 },
+  label: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: C.creamDim, marginBottom: 12 },
+  input: {
+    backgroundColor: C.surface, borderRadius: 16, paddingHorizontal: 20, paddingVertical: 18,
+    fontSize: 20, fontWeight: '700', color: C.surfaceHigh,
+    borderWidth: 1, borderColor: '#EAECEB',
+  },
+  primaryBtn: {
+    backgroundColor: C.terra, borderRadius: 16, paddingVertical: 20, alignItems: 'center',
+    marginTop: 20, shadowColor: C.terra, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  disabledBtn: { opacity: 0.5 },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
+});
