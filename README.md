@@ -86,7 +86,7 @@ Monager Pocket (mobile) is your entry point — not the web app. You create your
 <br/>
 
 <div align="center">
-  <img width="1024" height="572" alt="Diagram: Monager — How It Works (OCEAN Quiz to Push Sync)" src="[INSERT_GITHUB_LINK_OR_FILE_PATH_TO_UPLOADED_IMAGE_HERE]" style="border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px 0;" />
+  <img width="1920" height="1080" alt="Diagram: Monager — How It Works" src="https://github.com/user-attachments/assets/db8f26f0-2621-4383-beef-8a73a1f4248f" style="border-radius: 12px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px 0;" />
 </div>
 
 <br/>
