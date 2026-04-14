@@ -54,7 +54,14 @@ Monager is not one app. It is a system with two surfaces that work together. The
 
 ## 3. The User Flow 
 
-![User Flow Diagram Header]([Add your User Flow Diagram image link here])
+Monager Pocket (mobile) is your entry point — not the web app. You create your Monager on your phone first. The desk comes to life after.
+**Step 1** — Create Your Monager (Mobile): Download Monager Pocket. Enter your name and monthly income. Takes 20 seconds.
+**Step 2** — The OCEAN Quiz (Mobile): 10 questions, 90 seconds, 5-point scale. Monager uses your Big Five psychometric profile to assign a complementary twin archetype — The Anchor, The Planner, The Strategist, The Coach, or The Challenger. This archetype shapes every note, nudge and letter you ever receive.
+**Step 3** — Connect Your Bank (Mobile): Setu Account Aggregator opens in-app. Select your bank, approve consent. Setu fetches your last 3 months of real transactions. No credentials shared with Monager. RBI-regulated and fully secure.
+**Step 4** — Monager's Desk Appears (Web): The moment consent is approved, your web desk activates — pre-populated with real data, binder sections filled, Investment Punch Card ready. Monager drops the first sticky note. From here, Monager runs. You just check in.
+
+<img width="1024" height="572" alt="image" src="https://github.com/user-attachments/assets/e5764471-31fa-41c0-9fdc-482c830cfb62" />
+
 
 ---
 
@@ -114,9 +121,9 @@ A quick overview of what powers the Monager machine:
 | `GET` | `/api/wallet/profile/{user_id}` | Fetches user net worth, wallet breakdown, and profile summary. |
 | `POST` | `/api/setu/consent/{user_id}` | Hit the Setu AA and generate a redirect URL for user auth. |
 | `POST` | `/api/setu/webhook` | Listens for AA Data Sessions. Instantly grabs transactions passively. |
-| `GET` | `/api/binder/overview/{user_id}` | Calculates current spend vs Budget, generating the Github-style heatmap. |
+| `GET` | `/api/binder/overview/{user_id}` | Returns current spend vs budget per category, percentage utilisation, and top merchant per section. |
 | `GET` | `/api/transactions/user/{user_id}`| Returns cleanly auto-categorised transactions. |
-| `POST` | `/api/investment/sweep` | Sweeps the unused budget directly into SIP/Market instruments. |
+| `POST` | `/api/investment/sweep` | Sweeps unused budget surplus into a new stamp on your Investment Punch Card — micro investment, one stamp at a time. |
 | `GET` | `/api/insights/summary/{user_id}`| Rule Engine evaluation generating personality-matched sticky notes. |
 | `POST` | `/api/mood` | Logs daily Stress/Happiness parameters for analytics correlation computation. |
 | `POST` | `/api/letters/generate` | Calls Gemini API to author the deeply personal Monthly update. |
@@ -130,9 +137,10 @@ Our schema revolves around making interactions trackable and relational:
 * **`transactions`**: Granular debits/credits fetched via Setu API and mapped to auto-categories.
 * **`binder_sections`**: Budget limits + limits utilized, updated continuously via triggers.
 * **`sticky_notes`**: Historical ledger of push nudges sent (e.g., "Food boundary crossed. 👀").
-* **`investments`**: Ledger for end-of-month piggy-bank sweeps.
+* **`investments`**: Tracks total stamps earned, surplus swept, SIP amount, and total invested on the Investment Punch Card.
 * **`mood_logs`**: Tracks daily user emotional state vs spending.
 * **`twin_letters`**: Caches the 150-word Gemini outputs so they're only generated once a month.
+* **setu_sessions**: Maps Setu consent IDs and data session IDs to users. Persisted in the database — not memory — so webhook lookups survive server restarts.
 
 ---
 
