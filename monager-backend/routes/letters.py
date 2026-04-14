@@ -34,6 +34,7 @@ async def trigger_letter_generation(user_id: str):
 
 @router.get("/history/{user_id}")
 async def get_letter_history(user_id: str):
+    """Return all letters for a user, newest first."""
     user_id = format_uid(user_id)
     res = supabase.table('twin_letters')\
         .select('*')\
@@ -43,8 +44,9 @@ async def get_letter_history(user_id: str):
         .execute()
     return res.data if res.data else []
 
-@router.get("/{user_id}")
+@router.get("/latest/{user_id}")
 async def get_latest_letter(user_id: str):
+    """Return the most recent letter."""
     user_id = format_uid(user_id)
     res = supabase.table('twin_letters')\
         .select('*')\
@@ -55,5 +57,10 @@ async def get_latest_letter(user_id: str):
         .execute()
     if res.data and len(res.data) > 0:
         return res.data[0]
-    
     return {"content": "No letter from Monager yet. Linking your bank will trigger your first analysis!"}
+
+# Legacy alias kept for backwards-compat (mobile app, etc.)
+@router.get("/{user_id}")
+async def get_latest_letter_legacy(user_id: str):
+    """Legacy: same as /latest/{user_id}."""
+    return await get_latest_letter(user_id)

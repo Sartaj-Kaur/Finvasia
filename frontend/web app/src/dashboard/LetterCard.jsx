@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import paperImg from '../assets/paper.jpg';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ const MONTH_NAMES = [
   'July','August','September','October','November','December'
 ];
 
+/* ─── Static fallback letters (shown when no AI letter exists) ─── */
 const LETTERS = {
   0:  { title: 'A January Note', body: ['The year is brand new and so are you. Every rupee saved in January is a seed planted for the harvest ahead. You started strong — don\'t look back.', 'Cold months call for warm plans. Keep your budget tight and your goals tighter. January discipline compounds into something extraordinary by December. Stay the course.', 'Track every rupee this month. The habit you build in January echoes through the entire year.'] },
   1:  { title: 'Dear February You', body: ['February is short but mighty. The weeks fly by — make sure your money doesn\'t fly with them.', 'You\'ve already proven you can resist impulse. That discipline? It compounds, just like interest. You\'re two months deep into a year that\'s going to look very different.', 'Review your January numbers today. Adjust where needed. Forward is the only direction that matters.'] },
@@ -33,7 +34,7 @@ const STACK_LINES = [
   'Budget check-in: things are looking...',
 ];
 
-const PaperTexture = ({ brightness = "100%" }) => (
+const PaperTexture = ({ brightness = '100%' }) => (
   <div
     className="absolute inset-0 pointer-events-none z-0"
     style={{
@@ -55,16 +56,87 @@ export function LetterCard() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
   const { currentUser } = useAuth();
-  const [liveLetter, setLiveLetter] = useState(null);
 
+  /* Map of "year-month" → letter content string (or null = not found yet) */
+  const [letterCache, setLetterCache] = useState({});
+  /* Whether history has been loaded */
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  /* Generating state for the current month */
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState(null);
+
+  /* ─── Load full letter history when the viewer opens ─── */
   useEffect(() => {
-      if (currentUser?.uid) {
-          fetchApi(`/letter/${currentUser.uid}`)
-            .then(data => setLiveLetter(data?.content))
-            .catch(console.error);
+    if (!currentUser?.uid || !historyLoaded) return;
+    // Already loaded — nothing to do
+  }, [currentUser, historyLoaded]);
+
+  const loadHistory = useCallback(async () => {
+    if (!currentUser?.uid) return;
+    try {
+      const data = await fetchApi(`/letter/history/${currentUser.uid}`);
+      if (Array.isArray(data)) {
+        const map = {};
+        data.forEach(item => {
+          const key = `${item.year}-${item.month}`;
+          map[key] = item.content;
+        });
+        setLetterCache(map);
       }
+    } catch (err) {
+      console.error('Failed to load letter history:', err);
+    }
+    setHistoryLoaded(true);
   }, [currentUser]);
 
+  /* Load history once when viewer first opens */
+  const hasLoadedRef = useRef(false);
+  useEffect(() => {
+    if (step >= 4 && !hasLoadedRef.current && currentUser?.uid) {
+      hasLoadedRef.current = true;
+      loadHistory();
+    }
+  }, [step, loadHistory, currentUser]);
+
+  /* ─── Derive letter for the selected month/year ─── */
+  const cacheKey = `${selectedYear}-${selectedMonth + 1}`; // months stored as 1-indexed
+  const aiContent = letterCache[cacheKey];
+  const staticFallback = LETTERS[selectedMonth] || LETTERS[0];
+  const letter = aiContent
+    ? { title: 'Intelligence Dispatch', body: [aiContent] }
+    : staticFallback;
+  const hasAiLetter = Boolean(aiContent);
+
+  /* Is this the current or a past month (allowed to generate)? */
+  const validMonth = selectedMonth;
+  const isPastYear = selectedYear < currentYear;
+  const isCurrentOrPast =
+    isPastYear || (selectedYear === currentYear && validMonth <= currentMonth);
+
+  /* ─── Generate letter for selected month ─── */
+  const handleGenerate = async (e) => {
+    e.stopPropagation();
+    if (!currentUser?.uid || generating) return;
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      const data = await fetchApi(`/letter/generate/${currentUser.uid}`, {
+        method: 'POST',
+      });
+      if (data?.letter) {
+        setLetterCache(prev => ({
+          ...prev,
+          [cacheKey]: data.letter,
+        }));
+      }
+    } catch (err) {
+      console.error('Letter generation failed:', err);
+      setGenerateError('Generation failed. Try again shortly.');
+    }
+    setGenerating(false);
+  };
+
+  /* ─── Envelope animation ─── */
   const handleSealClick = (e) => {
     e.stopPropagation();
     if (step !== 0) return;
@@ -83,15 +155,15 @@ export function LetterCard() {
     setStep(0);
   };
 
-  // Available months: all 12 for past years, up to currentMonth for current year
-  const isPastYear = selectedYear < currentYear;
+  /* ─── Month navigation ─── */
   const availableMonths = Array.from(
     { length: isPastYear ? 12 : currentMonth + 1 }, (_, i) => i
   );
 
-  const validMonth = isPastYear
-    ? selectedMonth
-    : Math.min(selectedMonth, currentMonth);
+  const isAtStart = selectedYear <= currentYear - 2 && validMonth === 0;
+  const isAtEnd = selectedYear === currentYear && validMonth === currentMonth;
+
+  const availableYears = Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
 
   const goToPrevMonth = (e) => {
     e.stopPropagation();
@@ -111,13 +183,6 @@ export function LetterCard() {
       setSelectedMonth(0);
     }
   };
-
-  const isAtStart = selectedYear <= currentYear - 2 && validMonth === 0;
-  const isAtEnd = selectedYear === currentYear && validMonth === currentMonth;
-
-  const letterFallback = LETTERS[validMonth] || LETTERS[0];
-  const letter = liveLetter ? { title: `Intelligence Dispatch`, body: [liveLetter] } : letterFallback;
-  const availableYears = Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
 
   return (
     <>
@@ -166,7 +231,7 @@ export function LetterCard() {
             <div className="absolute inset-0 shadow-[inset_0_-20px_40px_rgba(100,50,15,0.2)] pointer-events-none z-10" />
           </div>
 
-          {/* Envelope text — top center, bigger */}
+          {/* Envelope text */}
           <div className="absolute top-[8%] inset-x-0 text-center z-[50] pointer-events-none transform rotate-[-1deg]">
             <p
               className="text-[#2b1f1a] text-[18px] xl:text-[22px] tracking-[0.02em] opacity-90 drop-shadow-[0_1px_2px_rgba(255,255,255,0.6)]"
@@ -217,7 +282,7 @@ export function LetterCard() {
                   boxShadow: 'inset 0 3px 6px rgba(255,255,255,0.25), inset -2px -4px 8px rgba(0,0,0,0.6), 0 8px 16px rgba(0,0,0,0.5)'
                 }}
                 animate={step === 0 ? { scale: 1 } : { scale: [1, 1.15, 0.95], opacity: [1, 1, 0] }}
-                transition={{ duration: 0.5, ease: "easeIn" }}
+                transition={{ duration: 0.5, ease: 'easeIn' }}
                 onClick={handleSealClick}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -257,19 +322,17 @@ export function LetterCard() {
                   initial={{ scale: 0.88, y: 40, opacity: 0 }}
                   animate={{ scale: 1, y: 0, opacity: 1 }}
                   exit={{ scale: 0.88, y: 40, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 200, damping: 26 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 26 }}
                   className="relative z-[110] flex flex-col w-full max-w-2xl"
                   style={{ maxHeight: '98vh' }}
                   onClick={e => e.stopPropagation()}
                 >
-                  {/* ── STACKED PAST LETTERS (visible behind) ── */}
+                  {/* ── STACKED PAST LETTERS ── */}
                   <div className="absolute pointer-events-none" style={{ inset: '44px 0 0 0' }}>
-                    {/* 3rd paper - furthest back */}
                     <div className="absolute inset-0 rounded-b-[10px] overflow-hidden border border-[#5c3820]/60"
                       style={{ transform: 'rotate(5deg) translateY(14px) scale(0.96)', zIndex: 100, background: '#e8d9c0' }}>
                       <PaperTexture brightness="75%" />
                       <div className="absolute inset-0 bg-[#b8936a]/20" />
-                      {/* Faint letter lines */}
                       <div className="absolute inset-0 p-10 opacity-30">
                         {STACK_LINES.map((line, i) => (
                           <div key={i} className="mb-5 text-[#3b2010] font-bold text-[13px]"
@@ -280,7 +343,6 @@ export function LetterCard() {
                         <div className="mt-8 text-right text-[#3b2010] text-[12px] font-bold" style={{ fontFamily: "'Caveat', cursive" }}>— Monager</div>
                       </div>
                     </div>
-                    {/* 2nd paper */}
                     <div className="absolute inset-0 rounded-b-[10px] overflow-hidden border border-[#5c3820]/60"
                       style={{ transform: 'rotate(2.5deg) translateY(7px) scale(0.982)', zIndex: 101, background: '#ecdfc8' }}>
                       <PaperTexture brightness="85%" />
@@ -297,7 +359,7 @@ export function LetterCard() {
                     </div>
                   </div>
 
-                  {/* ── HEADER BAR: Year + Months ── */}
+                  {/* ── HEADER BAR ── */}
                   <div className="relative z-[115] w-full bg-[#1e140d]/95 backdrop-blur-sm rounded-t-[10px] border border-[#5c3820]/70 border-b-0 overflow-hidden">
                     {/* Year row */}
                     <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5 border-b border-[#5c3820]/40">
@@ -325,19 +387,27 @@ export function LetterCard() {
                         <ChevronLeft size={16} />
                       </button>
                       <div className="flex-1 flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-                        {availableMonths.map(m => (
-                          <button
-                            key={m}
-                            onClick={(e) => { e.stopPropagation(); setSelectedMonth(m); }}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap font-mono flex-shrink-0 ${
-                              validMonth === m
-                                ? 'bg-[#d4af37] text-[#1a0d05]'
-                                : 'text-[#d4af37]/50 hover:text-[#d4af37] hover:bg-white/8'
-                            }`}
-                          >
-                            {MONTH_NAMES[m].slice(0, 3)}
-                          </button>
-                        ))}
+                        {availableMonths.map(m => {
+                          const mKey = `${selectedYear}-${m + 1}`;
+                          const hasAi = Boolean(letterCache[mKey]);
+                          return (
+                            <button
+                              key={m}
+                              onClick={(e) => { e.stopPropagation(); setSelectedMonth(m); }}
+                              className={`relative px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase transition-all whitespace-nowrap font-mono flex-shrink-0 ${
+                                validMonth === m
+                                  ? 'bg-[#d4af37] text-[#1a0d05]'
+                                  : 'text-[#d4af37]/50 hover:text-[#d4af37] hover:bg-white/8'
+                              }`}
+                            >
+                              {MONTH_NAMES[m].slice(0, 3)}
+                              {/* Dot indicator for months with AI letters */}
+                              {hasAi && (
+                                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#2a9d8f]" />
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                       <button onClick={goToNextMonth} disabled={isAtEnd}
                         className="text-[#d4af37] hover:bg-white/10 rounded-full p-0.5 disabled:opacity-20 disabled:cursor-not-allowed transition-colors flex-shrink-0">
@@ -347,7 +417,6 @@ export function LetterCard() {
                   </div>
 
                   {/* ── MAIN LETTER PAPER ── */}
-                  {/* Solid bg wrapper prevents texture flash between transitions */}
                   <div className="relative z-[112] rounded-b-[10px] overflow-hidden border border-[#5c3820]/70 border-t-0 flex-1"
                     style={{ background: '#f2e4cc', minHeight: '72vh' }}>
                     <PaperTexture brightness="110%" />
@@ -369,10 +438,17 @@ export function LetterCard() {
                           <X size={22} />
                         </button>
 
-                        {/* Month + Year label */}
-                        <p className="text-[#8c5c35] text-[11px] font-bold tracking-[0.3em] uppercase mb-2 font-mono mix-blend-multiply">
-                          {MONTH_NAMES[validMonth]} {selectedYear}
-                        </p>
+                        {/* Month + Year label + AI badge */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-[#8c5c35] text-[11px] font-bold tracking-[0.3em] uppercase font-mono mix-blend-multiply">
+                            {MONTH_NAMES[validMonth]} {selectedYear}
+                          </p>
+                          {hasAiLetter && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase bg-[#2a9d8f]/15 text-[#2a9d8f] border border-[#2a9d8f]/30 mix-blend-multiply">
+                              AI Letter
+                            </span>
+                          )}
+                        </div>
 
                         {/* Title */}
                         <h3
@@ -401,6 +477,45 @@ export function LetterCard() {
                             — Monager
                           </span>
                         </div>
+
+                        {/* ── Generate Banner (when no AI letter exists) ── */}
+                        {!hasAiLetter && isCurrentOrPast && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="mt-6 rounded-[8px] border border-dashed border-[#8c5c35]/40 bg-[#f5ead8]/60 p-4 flex flex-col items-center gap-3 mix-blend-multiply"
+                          >
+                            <p className="text-[#5c3220] text-[12px] font-bold tracking-wider uppercase opacity-70 font-mono text-center">
+                              No AI letter for {MONTH_NAMES[validMonth]} {selectedYear}
+                            </p>
+                            <p className="text-[#3b2010] text-[15px] opacity-60 text-center" style={{ fontFamily: "'Caveat', cursive" }}>
+                              Monager can write a personalised financial letter based on your spending & mood data.
+                            </p>
+                            {generateError && (
+                              <p className="text-red-600 text-[12px] text-center">{generateError}</p>
+                            )}
+                            <button
+                              onClick={handleGenerate}
+                              disabled={generating}
+                              className="flex items-center gap-2 px-4 py-2 rounded-[6px] text-[12px] font-bold tracking-wider uppercase transition-all"
+                              style={{
+                                background: generating
+                                  ? 'rgba(140,92,53,0.15)'
+                                  : 'rgba(140,92,53,0.9)',
+                                color: generating ? '#8c5c35' : '#f5ead8',
+                                border: '1px solid rgba(140,92,53,0.4)',
+                                cursor: generating ? 'not-allowed' : 'pointer',
+                              }}
+                            >
+                              {generating
+                                ? <><Loader2 size={14} className="animate-spin" /> Generating…</>
+                                : <><Sparkles size={14} /> Generate with AI</>
+                              }
+                            </button>
+                          </motion.div>
+                        )}
+
                       </motion.div>
                     </AnimatePresence>
                   </div>
