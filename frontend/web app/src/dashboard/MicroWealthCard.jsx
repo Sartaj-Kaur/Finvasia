@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import paperImg from '../assets/file.avif';
+import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../api';
 
 /* ── PREMIUM GOLD FOIL SEAL (Skeuomorphic) ── */
 const FoilStamp = () => (
@@ -42,18 +44,22 @@ const FoilStamp = () => (
 );
 
 export function MicroWealthCard() {
+  const { currentUser } = useAuth();
   const [stampCount, setStampCount] = useState(0);
+  const [investTotal, setInvestTotal] = useState(0);
 
-  // Auto-ticking stamps
+  // Fetch real investment data from the backend
   useEffect(() => {
-    const timer = setInterval(() => {
-      setStampCount(prev => {
-        if (prev >= 10) return 0;
-        return prev + 1;
-      });
-    }, 3500);
-    return () => clearInterval(timer);
-  }, []);
+    if (!currentUser?.uid) return;
+    fetchApi(`/insights/summary/${currentUser.uid}`)
+      .then(data => {
+        const total = data?.investment_total || 0;
+        setInvestTotal(total);
+        // 1 stamp per ₹500 saved, max 10 stamps on this card
+        setStampCount(Math.min(10, Math.floor(total / 500)));
+      })
+      .catch(console.error);
+  }, [currentUser]);
 
   return (
     <motion.div
@@ -130,7 +136,7 @@ export function MicroWealthCard() {
             animate={{ opacity: 1, scale: 1 }}
             className="font-mono text-xs text-[#2b1f1a] font-bold tracking-[0.1em] uppercase opacity-80"
           >
-            {stampCount} / 10 ASSETS SECURED
+            {stampCount} / 10 SEALS · ₹{investTotal.toLocaleString('en-IN')} SALVAGED
           </motion.p>
         </div>
 

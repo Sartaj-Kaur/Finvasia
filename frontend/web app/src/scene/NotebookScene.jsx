@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Text, RoundedBox, useTexture, Html } from '@react-three/drei';
+import { Environment, Text, RoundedBox, useTexture } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { useSpring, a } from '@react-spring/three';
 import * as THREE from 'three';
@@ -8,8 +8,7 @@ import { LeatherCover } from './LeatherCover';
 import { StitchThread } from './StitchThread';
 import { RingsOnly, RingHoles } from './MetalRings';
 import fileAvif from '../assets/file.avif';
-import LeftPageUI from './LeftPageUI';
-import RightPageUI from './RightPageUI';
+import { useAuth } from '../context/AuthContext';
 
 // ── Base Notebook dimensions (Three.js world units)
 const BASE_FACE_W = 1.05;   // cover width
@@ -30,9 +29,14 @@ const RING_X = LEFT_X;
 const RING_Y = [0.13, 0.207, 0.282, 0.717, 0.793, 0.87].map(n => (n - 0.5) * NB_H);
 
 const TABS = [
-  { id: 'BUDGET', name: 'BUDGET', color: '#D4826A' },  // warm coral
-  { id: 'GOALS', name: 'GOALS', color: '#7DAA8C' },  // sage green
-  { id: 'INVEST', name: 'INVEST', color: '#C17F8E' },  // dusty rose
+  { id: 'CAT_0', name: 'HOUSING', color: '#D4826A' },
+  { id: 'CAT_1', name: 'FOOD & DINING', color: '#E4A06B' },
+  { id: 'CAT_2', name: 'TRANSPORT', color: '#7DAA8C' },
+  { id: 'CAT_3', name: 'UTILITIES', color: '#57B8AD' },
+  { id: 'CAT_4', name: 'HEALTH', color: '#6A92D4' },
+  { id: 'CAT_5', name: 'ENTERTAIN', color: '#966AD4' },
+  { id: 'CAT_6', name: 'SHOPPING', color: '#C17F8E' },
+  { id: 'CAT_7', name: 'PERSONAL', color: '#D46A92' },
 ];
 
 
@@ -49,7 +53,7 @@ function MonthTab({ tab, tabX, tabY, tabWidth, isActive, onClick, setHovered }) 
       onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
       <RoundedBox
-        args={[tabWidth, 0.22, PAPER_THICKNESS]}
+        args={[tabWidth, 0.15, PAPER_THICKNESS]}
         radius={0.01}
         smoothness={4}
         castShadow
@@ -64,11 +68,12 @@ function MonthTab({ tab, tabX, tabY, tabWidth, isActive, onClick, setHovered }) 
   );
 }
 
-function NotebookGroup({ isOpen, setIsOpen, month, year }) {
+function NotebookGroup({ isOpen, setIsOpen, month, year, activeTab, setActiveTab }) {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
-  const [activeTab, setActiveTab] = useState('BUDGET');
   const paperTex = useTexture(fileAvif);
+  const { currentUser } = useAuth();
+  const userId = currentUser?.uid || null;
 
   useEffect(() => {
     document.body.style.cursor = hovered ? 'pointer' : 'auto';
@@ -130,21 +135,9 @@ function NotebookGroup({ isOpen, setIsOpen, month, year }) {
         >
           <boxGeometry args={[P_W, P_H, PAPER_D / 4]} />
           <meshStandardMaterial map={paperTex} roughness={0.97} />
-          {i === 0 && isOpen && (
-            <Html
-              transform
-              center
-              zIndexRange={[100, 0]}
-              position={[0, 0, PAPER_D / 8 + 0.006]}
-              scale={0.06}
-            >
-              <div className="w-[800px] h-[1000px] overflow-visible">
-                <RightPageUI isOpen={isOpen} activeTab={activeTab} month={month} year={year} />
-              </div>
-            </Html>
-          )}
         </mesh>
       ))}
+
 
       {/* 2. Back Cover (Wider to reach past the tags) */}
       <LeatherCover
@@ -168,9 +161,9 @@ function NotebookGroup({ isOpen, setIsOpen, month, year }) {
 
       {/* 4. Month Tabs (Interactive triggers) */}
       {TABS.map((tab, i) => {
-        // Spreading the tabs evenly across the entire length of the notebook
-        const tabY = NB_H / 2 - 0.25 - i * 0.28;
-        // Total physical stretch of the card. Increased drastically.
+        // Spreading 8 tabs vertically.
+        const tabY = NB_H / 2 - 0.15 - i * 0.20;
+        // Adjust width slightly so they don't break notebook boundary
         const tabWidth = 0.28;
         // Pushing the X further out so the tab text is highly visible
         const tabX = 0.55 + extraWidth;
@@ -214,22 +207,9 @@ function NotebookGroup({ isOpen, setIsOpen, month, year }) {
             <mesh key={`p_f_${i}`} position={[0.01 + off * 0.005, 0, -FRONT_Z + off * 0.005]} castShadow receiveShadow>
               <boxGeometry args={[P_W, P_H, PAPER_D / 4]} />
               <meshStandardMaterial map={paperTex} roughness={0.97} />
-              {i === 0 && isOpen && (
-                <Html
-                  transform
-                  center
-                  zIndexRange={[100, 0]}
-                  position={[0, 0, -PAPER_D / 8 - 0.006]}
-                  rotation={[0, Math.PI, 0]}
-                  scale={0.07}
-                >
-                  <div className="w-[800px] h-[1000px] overflow-visible">
-                <LeftPageUI isOpen={isOpen} month={month} year={year} />
-              </div>
-                </Html>
-              )}
             </mesh>
           ))}
+
 
           {/* B. Front Leather Cover */}
           <LeatherCover
@@ -296,7 +276,7 @@ function NotebookGroup({ isOpen, setIsOpen, month, year }) {
   );
 }
 
-export default function NotebookScene({ isOpen, setIsOpen, month, year }) {
+export default function NotebookScene({ isOpen, setIsOpen, month, year, activeTab, setActiveTab }) {
   return (
     <Canvas
       shadows
@@ -323,7 +303,7 @@ export default function NotebookScene({ isOpen, setIsOpen, month, year }) {
 
       <Environment preset="studio" environmentIntensity={0.15} />
       <Suspense fallback={null}>
-        <NotebookGroup isOpen={isOpen} setIsOpen={setIsOpen} month={month} year={year} />
+        <NotebookGroup isOpen={isOpen} setIsOpen={setIsOpen} month={month} year={year} activeTab={activeTab} setActiveTab={setActiveTab} />
       </Suspense>
 
     </Canvas>

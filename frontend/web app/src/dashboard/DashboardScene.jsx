@@ -21,7 +21,11 @@ export default function DashboardScene({ isOpen }) {
         .dash-root.is-open .dash-wallet,
         .dash-root.is-open .dash-savings,
         .dash-root.is-open .dash-clipboard,
-        .dash-root.is-open .dash-letter {
+        .dash-root.is-open .dash-letter,
+        .dash-root.is-open .dash-microwealth,
+        .dash-root.is-open .dash-calendar,
+        .dash-root.is-open .dash-pencil,
+        .dash-root.is-open .dash-coffee {
           pointer-events: none !important;
           visibility: hidden !important;
           opacity: 0 !important;

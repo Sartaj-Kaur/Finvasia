@@ -22,6 +22,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from routes.analytics import router as analytics_router
+
 app.include_router(setu_router, prefix="/api")
 app.include_router(binder_router, prefix="/api")
 app.include_router(mood_router, prefix="/api")
@@ -32,6 +34,7 @@ app.include_router(investment_router, prefix="/api")
 app.include_router(quiz_router, prefix="/api")
 app.include_router(fake_bank_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
+app.include_router(analytics_router, prefix="/api")
 
 @app.get("/")
 def health_check():

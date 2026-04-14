@@ -4,9 +4,12 @@ import DashboardScene from './dashboard/DashboardScene';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthScene } from './scene/AuthScene';
 import MonthSelector from './scene/MonthSelector';
+import LeftPageUI from './scene/LeftPageUI';
+import RightPageUI from './scene/RightPageUI';
 
 function AppContent() {
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('CAT_0');
   const { currentUser } = useAuth();
 
   // Derive earliest allowed month from account creation date
@@ -14,11 +17,11 @@ function AppContent() {
     ? new Date(currentUser.metadata.creationTime)
     : new Date();
   const earliestMonth = creationDate.getMonth();
-  const earliestYear  = creationDate.getFullYear();
+  const earliestYear = creationDate.getFullYear();
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
-  const [selectedYear,  setSelectedYear]  = useState(now.getFullYear());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   const handleMonthChange = (m, y) => {
     setSelectedMonth(m);
@@ -50,8 +53,36 @@ function AppContent() {
           setIsOpen={setIsNotebookOpen}
           month={selectedMonth}
           year={selectedYear}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
       </div>
+
+      {/* HTML Overlays for Notebook Pages - Rendered completely outside Canvas for clean interaction */}
+      {isNotebookOpen && (
+        <div className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center pt-8">
+          {/* Centered container mapped to notebook open state bounds and matching the 3D tilt */}
+          <div className="flex w-[1160px] h-[670px] max-w-[95vw] max-h-[85vh] relative z-30 pointer-events-none rounded-sm transition-transform duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)]"
+            style={{
+              transform: 'perspective(1000px) rotateX(1.86deg) rotateZ(-2.00deg)',
+              transformOrigin: 'center center'
+            }}>
+            {/* Left Page (Budget Overview) - Extra flex to compensate for 3D perspective foreshortening */}
+            <div className="h-full bg-transparent overflow-hidden rounded-l-sm" style={{ flex: 1.05, transform: 'translateX(-20px)', backdropFilter: 'blur(0px)', pointerEvents: 'none' }}>
+              <LeftPageUI isOpen={isNotebookOpen} month={selectedMonth} year={selectedYear} userId={currentUser?.uid} />
+            </div>
+
+            {/* Center Spine Spacer */}
+            <div className="w-[12px] h-full z-40 bg-transparent pointer-events-none" />
+
+            {/* Right Page (Tabs Content) */}
+            <div className="flex-1 h-full bg-transparent overflow-hidden rounded-r-sm pointer-events-none">
+              <RightPageUI isOpen={isNotebookOpen} activeTab={activeTab} month={selectedMonth} year={selectedYear} userId={currentUser?.uid} />
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Vintage Month Selector — only visible when notebook is open */}
       <div
