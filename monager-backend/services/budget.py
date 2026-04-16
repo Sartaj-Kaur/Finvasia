@@ -10,7 +10,7 @@ BUDGET_PERCENTAGES = {
     "others": 0.15
 }
 
-async def reallocate_user_budgets(user_id: str, income: float, supabase_client: Client):
+def reallocate_user_budgets(user_id: str, income: float, supabase_client: Client):
     """
     Re-calculates and updates all binder_sections for a user based on new income.
     If sections don't exist, they are created.

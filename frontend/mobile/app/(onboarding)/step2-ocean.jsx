@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, SafeAreaView,
   ActivityIndicator, StyleSheet, Platform, StatusBar, Dimensions
@@ -12,29 +12,42 @@ import { BgShapes } from '../../components/ui/BgShapes';
 
 const { width } = Dimensions.get('window');
 
-const QUESTIONS = [
-  { text: "I am extremely disciplined with budgets.", trait: "C", reverse: false },
-  { text: "I often make impulsive purchases.", trait: "C", reverse: true },
-  { text: "I worry constantly about running out of money.", trait: "N", reverse: false },
-];
-
 export default function Step2Ocean() {
   const router = useRouter();
   const { name, income } = useLocalSearchParams();
   const { currentUser } = useAuth();
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    async function loadQuestions() {
+      try {
+        const res = await fetchApi('/quiz/questions');
+        if (res && res.questions) {
+          const shuffled = res.questions.sort(() => 0.5 - Math.random());
+          setQuestions(shuffled.slice(0, 10));
+        }
+      } catch (err) {
+        console.error("Failed to load questions:", err);
+      } finally {
+        setLoadingQuestions(false);
+      }
+    }
+    loadQuestions();
+  }, []);
+
   const handleAnswer = async (val) => {
     const newAnswers = [...answers, {
-      trait: QUESTIONS[currentIndex].trait,
+      trait: questions[currentIndex].trait,
       value: val,
-      reverse: QUESTIONS[currentIndex].reverse
+      reverse: questions[currentIndex].reverse
     }];
     setAnswers(newAnswers);
 
-    if (currentIndex < QUESTIONS.length - 1) {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex(curr => curr + 1);
     } else {
       setIsSubmitting(true);
@@ -58,7 +71,19 @@ export default function Step2Ocean() {
     }
   };
 
-  const pct = ((currentIndex + 1) / QUESTIONS.length) * 100;
+  if (loadingQuestions || questions.length === 0) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <BgShapes variant="auth" />
+        <View style={[s.container, { alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={C.terra} />
+          <Text style={{ marginTop: 16, color: C.creamDim, fontWeight: '600' }}>Loading questions...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const pct = ((currentIndex + 1) / questions.length) * 100;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -68,7 +93,7 @@ export default function Step2Ocean() {
         {/* Header / Progress */}
         <View style={s.progressHeader}>
           <Text style={s.progressLabel}>
-            PSYCHOLOGY {currentIndex + 1}/{QUESTIONS.length}
+            PSYCHOLOGY {currentIndex + 1}/{questions.length}
           </Text>
           <View style={s.progressBarTrack}>
             <Animated.View
@@ -81,7 +106,7 @@ export default function Step2Ocean() {
         {/* Question Area */}
         <View style={s.questionArea}>
           <Text style={s.questionText}>
-            {QUESTIONS[currentIndex].text}
+            {questions[currentIndex].text}
           </Text>
         </View>
 

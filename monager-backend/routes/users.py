@@ -11,7 +11,7 @@ class UserProfileRequest(BaseModel):
     income: float
 
 @router.post("/{user_id}")
-async def upsert_user(user_id: str, profile: UserProfileRequest):
+def upsert_user(user_id: str, profile: UserProfileRequest):
     """
     Creates or updates the user profile context.
     - Updates income and name
@@ -34,6 +34,6 @@ async def upsert_user(user_id: str, profile: UserProfileRequest):
         }).execute()
     
     # Trigger budget re-allocation
-    await reallocate_user_budgets(user_id, profile.income, supabase)
+    reallocate_user_budgets(user_id, profile.income, supabase)
         
     return {"status": "success", "message": "User profile and budgets synced"}

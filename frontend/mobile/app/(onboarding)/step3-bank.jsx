@@ -4,6 +4,7 @@ import {
   ActivityIndicator, StyleSheet, Platform, StatusBar
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated';
 import { fetchApi } from '../../utils/api';
 import { C } from '../../constants/Theme';
@@ -11,19 +12,11 @@ import { BgShapes } from '../../components/ui/BgShapes';
 
 export default function Step3Bank() {
   const { completeOnboarding, currentUser } = useAuth();
+  const router = useRouter(); // Auto-imported from expo-router if needed
   const [loading, setLoading] = useState(false);
 
   const handleConnect = async () => {
-    setLoading(true);
-    try {
-      if (currentUser && currentUser.uid) {
-        await fetchApi(`/fake-bank/${currentUser.uid}/inject-data`, { method: 'POST' });
-      }
-    } catch (e) {
-      console.error("Error connecting bank:", e);
-    } finally {
-      completeOnboarding();
-    }
+    router.push('/(onboarding)/step4-setu');
   };
 
   return (

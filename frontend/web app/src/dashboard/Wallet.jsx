@@ -12,12 +12,16 @@ export function Wallet() {
   const [isOpen, setIsOpen] = useState(false);
   const { currentUser } = useAuth();
   const [balance, setBalance] = useState(24500);
+  const [userName, setUserName] = useState('');
   const [transactions, setTransactions] = useState([]);
 
   useEffect(() => {
     if (currentUser?.uid) {
         fetchApi(`/binder/${currentUser.uid}`)
-            .then(data => { if (data.user?.income) setBalance(data.user.income); })
+            .then(data => { 
+                if (data.user?.income) setBalance(data.user.income);
+                if (data.user?.name) setUserName(data.user.name);
+            })
             .catch(console.error);
 
         fetchApi(`/transactions/${currentUser.uid}`)
@@ -89,7 +93,7 @@ export function Wallet() {
             <div className="absolute inset-0 mix-blend-multiply opacity-80" style={{ backgroundImage: `url(${leatherImg})`, backgroundSize: '150px auto' }} />
             <div className="absolute inset-[4px] border-[1.5px] border-dashed border-[#d4af37] opacity-60 rounded-b-[6px] border-t-0 z-10"></div>
             <p className="absolute bottom-4 right-6 font-serif text-[#d4af37] font-bold opacity-90 text-sm tracking-widest drop-shadow-md z-10">
-              {currentUser?.displayName || 'User'}
+              {userName || currentUser?.displayName || 'User'}
             </p>
           </div>
         </div>
@@ -151,12 +155,16 @@ export function Wallet() {
                         {/* Avatar */}
                         <div className="w-[52px] h-[52px] rounded-full bg-gradient-to-br from-[#d4af37] to-[#8c6721] flex items-center justify-center p-[2px] shadow-lg">
                           <div className="w-full h-full rounded-full bg-[#1a0f08] flex items-center justify-center border-2 border-transparent">
-                            <span className="text-[22px] font-bold font-serif text-[#d4af37] drop-shadow-sm">J</span>
+                            <span className="text-[22px] font-bold font-serif text-[#d4af37] drop-shadow-sm">
+                                {(userName || currentUser?.displayName || 'U').charAt(0).toUpperCase()}
+                            </span>
                           </div>
                         </div>
                         {/* Identifiers */}
                         <div className="flex flex-col">
-                          <h2 className="text-[20px] font-bold tracking-wide drop-shadow-sm">Jaskaran</h2>
+                          <h2 className="text-[20px] font-bold tracking-wide drop-shadow-sm">
+                              {userName || currentUser?.displayName || 'User'}
+                          </h2>
                           <span className="text-[13px] font-semibold text-[#d4af37]/80 tracking-wider uppercase">Premium User</span>
                         </div>
                       </div>
@@ -201,7 +209,7 @@ export function Wallet() {
                         </div>
 
                         <div className="flex items-center justify-between text-[13px] text-white/50 font-medium tracking-widest uppercase">
-                          <span className="text-white/80 drop-shadow-sm">Jaskaran</span>
+                          <span className="text-white/80 drop-shadow-sm">{userName || currentUser?.displayName || 'User'}</span>
                           <span>12/28</span>
                         </div>
                       </div>

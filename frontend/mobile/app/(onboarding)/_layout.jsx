@@ -6,6 +6,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="step1" />
       <Stack.Screen name="step2-ocean" />
       <Stack.Screen name="step3-bank" />
+      <Stack.Screen name="step4-setu" />
     </Stack>
   );
 }

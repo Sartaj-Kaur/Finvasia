@@ -5,7 +5,7 @@ from utils import format_uid
 router = APIRouter(prefix="/binder", tags=["Binder"])
 
 @router.get("/{user_id}")
-async def get_binder(user_id: str):
+def get_binder(user_id: str):
     """
     Returns:
     - All binder_sections for user
