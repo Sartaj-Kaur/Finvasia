@@ -1,76 +1,99 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from database import supabase
 
 router = APIRouter(prefix="/quiz", tags=["Quiz"])
 
 class QuizAnswer(BaseModel):
-    trait: str
-    value: int
-    reverse: bool
+    value: str # 'A', 'B', 'C', or 'D'
 
 class QuizSubmitRequest(BaseModel):
     user_id: str
     answers: List[QuizAnswer]
 
-QUESTIONS = [
-    { "id": 1, "text": "Am the life of the party.", "trait": "E", "reverse": False },
-    { "id": 2, "text": "Don't talk a lot.", "trait": "E", "reverse": True },
-    { "id": 3, "text": "Am interested in people.", "trait": "A", "reverse": False },
-    { "id": 4, "text": "Feel little concern for others.", "trait": "A", "reverse": True },
-    { "id": 5, "text": "Am always prepared.", "trait": "C", "reverse": False },
-    { "id": 6, "text": "Leave my belongings around.", "trait": "C", "reverse": True },
-    { "id": 7, "text": "Get stressed out easily.", "trait": "N", "reverse": False },
-    { "id": 8, "text": "Am relaxed most of the time.", "trait": "N", "reverse": True },
-    { "id": 9, "text": "Have a rich vocabulary.", "trait": "O", "reverse": False },
-    { "id": 10, "text": "Have a vivid imagination.", "trait": "O", "reverse": False },
-]
-
-def calculate_scores(answers: List[QuizAnswer]):
-    scores = {"O": 0, "C": 0, "E": 0, "A": 0, "N": 0}
-    counts = {"O": 0, "C": 0, "E": 0, "A": 0, "N": 0}
-    
-    for ans in answers:
-        score = (6 - ans.value) if ans.reverse else ans.value
-        scores[ans.trait] += score
-        counts[ans.trait] += 1
-        
-    return {
-        "openness": round((scores["O"] / (counts["O"] * 5)) * 100) if counts["O"] else 0,
-        "conscientiousness": round((scores["C"] / (counts["C"] * 5)) * 100) if counts["C"] else 0,
-        "extraversion": round((scores["E"] / (counts["E"] * 5)) * 100) if counts["E"] else 0,
-        "agreeableness": round((scores["A"] / (counts["A"] * 5)) * 100) if counts["A"] else 0,
-        "neuroticism": round((scores["N"] / (counts["N"] * 5)) * 100) if counts["N"] else 0,
-    }
-
-def match_archetype(scores: dict):
-    N, C, O, E, A = scores["neuroticism"], scores["conscientiousness"], scores["openness"], scores["extraversion"], scores["agreeableness"]
-    
-    if N > 60:
-        return {"name": "The Calm Guide", "tone": "reassuring", "description": "You seem to worry about finances. Your FinTwin will be calm, steady and reassuring."}
-    if C < 40:
-        return {"name": "The Disciplined Mentor", "tone": "structured", "description": "You tend to be spontaneous. Your FinTwin will be organized and keep you on track."}
-    if O < 40:
-        return {"name": "The Gentle Challenger", "tone": "encouraging", "description": "You prefer routine. Your FinTwin will gently push you to explore new financial ideas."}
-    if E < 40:
-        return {"name": "The Supportive Friend", "tone": "warm", "description": "You are more reserved. Your FinTwin will be warm and easy to open up to."}
-    if A < 40:
-        return {"name": "The Honest Advisor", "tone": "direct", "description": "You are independent. Your FinTwin will be straightforward and no-nonsense."}
-        
-    return {"name": "The Balanced Coach", "tone": "balanced", "description": "You have a well-rounded personality. Your FinTwin will adapt to what you need."}
-
 @router.get("/questions")
 def get_questions():
-    return {"questions": QUESTIONS}
+    # Frontend handles the hardcoded questions directly now to ensure perfect adherence.
+    return {"questions": []}
+
+def match_archetype(answers: List[QuizAnswer], age: int):
+    counts = {"A": 0, "B": 0, "C": 0, "D": 0}
+    for ans in answers:
+        if ans.value in counts:
+            counts[ans.value] += 1
+            
+    # Scoring logic:
+    # A-heavy (cautious, avoidant or rule-follower): 
+    #   if age <= 25 = SPROUT, if age > 25 check other answers
+    # B/C-heavy (casual, growth-oriented): -> VOLT
+    # D-heavy (strategic, systematic): -> ORACLE
+    # Final rules:
+    # SPROUT  = beginner / avoidant / first-timer / age <=20
+    # VOLT    = intermediate / action-oriented / hustler
+    # ORACLE  = advanced / systematic / analytical / age >=26 or D-heavy
+
+    dominant = max(counts, key=counts.get)
+    max_count = counts[dominant]
+
+    bc_count = counts["B"] + counts["C"]
+    
+    if age <= 20:
+        assigned = "SPROUT"
+    elif age >= 26 and (dominant == "D" or counts["D"] >= 3):
+        assigned = "ORACLE"
+    elif dominant == "A":
+        if age <= 25:
+            assigned = "SPROUT"
+        else:
+            if bc_count > counts["D"]:
+                assigned = "VOLT"
+            else:
+                assigned = "ORACLE"
+    elif dominant in ["B", "C"] or bc_count >= 4:
+        assigned = "VOLT"
+    elif dominant == "D":
+        assigned = "ORACLE"
+    else:
+        # Mix/Fallback
+        if age <= 23:
+            assigned = "VOLT"
+        else:
+            assigned = "ORACLE"
+
+    agents = {
+        "SPROUT": {
+            "name": "SPROUT", "tone": "encouraging",
+            "description": "I keep it simple. I celebrate every win.\nNo jargon. No judgment. Just growth.\nWe learn about money together. 🌱"
+        },
+        "VOLT": {
+            "name": "VOLT", "tone": "direct",
+            "description": "Real talk only. No sugar coating.\nI'll push you when you're slipping.\nYour money should work as hard as you do. ⚡"
+        },
+        "ORACLE": {
+            "name": "ORACLE", "tone": "precise",
+            "description": "Data. Patterns. Projections.\nI speak your language — numbers.\nStrategy over emotion. Always. 🧠"
+        }
+    }
+    
+    return agents[assigned]
 
 @router.post("/submit")
 def submit_quiz(req: QuizSubmitRequest):
     if not req.answers:
         raise HTTPException(status_code=400, detail="No answers provided")
         
-    scores = calculate_scores(req.answers)
-    archetype = match_archetype(scores)
+    # Fetch age from DB
+    age = 22 # default fallback
+    try:
+        user_res = supabase.table('users').select('age').eq('id', req.user_id).execute()
+        if user_res.data and len(user_res.data) > 0:
+            if user_res.data[0].get('age') is not None:
+                age = int(user_res.data[0]['age'])
+    except Exception as e:
+        print("Error fetching user age:", e)
+        
+    archetype = match_archetype(req.answers, age)
     
     try:
         # Save to database
@@ -78,10 +101,10 @@ def submit_quiz(req: QuizSubmitRequest):
             "archetype": archetype["name"]
         }).eq('id', req.user_id).execute()
     except Exception as e:
-        print("Could not update supabase user:", e)
+        print("Could not update supabase user archetype:", e)
     
     return {
-        "scores": scores,
+        "scores": {}, # Not using OCEAN scores anymore
         "archetype": archetype["name"],
         "description": archetype["description"]
     }

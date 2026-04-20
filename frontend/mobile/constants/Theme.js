@@ -1,29 +1,32 @@
-// Monager Pocket — Health-Tech Pastel Design System
-// Palette: Dark Teal · Lavender · Bright Lime · Pure White
+// Monager Pocket — jUMPP Semi-Dark Design System
 
 export const C = {
-  // ── Backgrounds ──────────────────────────────────────────────────────────────
-  bg:          '#FFFFFF',   // Pure White main background
-  surface:     '#F5F7F6',   // Soft minty-grey for cards
-  surfaceHigh: '#1A3631',   // Dark Slate Teal (Headers/Tabbar)
-  border:      '#EAECEB',   // Soft faint borders, mostly unused now
+  // ── Original Dark Mode Palette (Preserved structurally) ──────────────────────
+  bg:          '#F7F8FA',   // Main content background
+  bgDim:       '#FFFFFF',   // Used for cards
+  surface:     '#FFFFFF',   // Bottom nav, headers
+  surfaceHigh: '#FFFFFF',   
+  border:      '#E5E7EB',   
 
-  // ── Text ─────────────────────────────────────────────────────────────────────
-  cream:       '#1A3631',   // Dark Teal text for main headings on white
-  creamDim:    '#687B77',   // Faded teal-grey for subtitles
-  creamFaint:  '#A0ABA8',   // Ghost labels
-
+  // ── Text Elements ────────────────────────────────────────────────────────────
+  cream:       '#1A1A1A',   // Primary text
+  creamDim:    '#6B7280',   // Secondary text
+  
   // ── Primary Accents ──────────────────────────────────────────────────────────
-  terra:       '#A58BFA',   // Richer Lavender (Improved contrast)
-  sand:        '#34D399',   // Saturated Mint (Improved contrast)
+  terra:       '#00A876',   
+  sand:        '#F2C94C',   // Deep muted warm yellow
+  sandLight:   '#F6D94C',   // Light muted warm yellow
+  yellow:      '#F2C94C',   
+  darkCard:    '#111827',   // Dark premium gradient block
+  blue:        '#F2C94C',   // jUMPP yellow (replaces old blue)
   
   // ── Semantic & Pops ─────────────────────────────────────────────────────────
-  green:       '#10B981',   // Emerald Green (High visibility on white)
-  red:         '#EF4444',   // Strong Coral Red
-  blue:        '#60A5FA',   // Solid Pastel Blue
+  red:         '#EF4444',
+  green:       '#10B981',
+  amber:       '#F59E0B',
 
   // ── Tab Bar ──────────────────────────────────────────────────────────────────
-  tabBg:       '#1A3631',   // Dark Slate Teal
-  tabActive:   '#CEFB67',   // Keep bright lime for Tab active since it's on dark teal
-  tabInactive: '#687B77',   // Faded text
+  tabBg:       '#FFFFFF',
+  tabActive:   '#F2C94C',   // jUMPP yellow
+  tabInactive: '#9A9AA8',
 };

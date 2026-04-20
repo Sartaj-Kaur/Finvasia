@@ -4,21 +4,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Onboarding screen palette — "vellum & walnut ink"
-        paper:      '#F5EFE3',   // Slightly warm off-white — aged paper, not #FFF
-        paperLight: '#EDE0C8',   // One shade warmer — vellum fill tints
-        terra:      '#C1673A',   // Terracotta — primary CTA (replaces generic gold)
-        sand:       '#D4A96A',   // Warm sand — secondary highlights
-        walnut:     '#3E2C1E',   // Deep walnut ink — text on paper
-        ink:        '#1C1714',   // Deepest ink
-        fog:        '#A89070',   // Muted label text
-        hairline:   '#D4C4B0',   // Subtle borders / underlines
-        moss:       '#5A8A68',   // Dried moss green
-        crimson:    '#A84040',   // Aged crimson
+        base: '#13131F',
+        card: '#1C1C2E',
+        glass: 'rgba(255,255,255,0.05)',
+        border: 'rgba(255,255,255,0.08)',
+        borderGreen: 'rgba(0,196,140,0.35)',
+        primary: '#00C48C',
+        greenGlow: 'rgba(0,196,140,0.12)',
+        amber: '#F5A623',
+        red: '#FF4D6A',
+        blue: '#4A9EFF',
+        textPrimary: '#F0F0F5',
+        textSecondary: '#8A8A9A',
+        textMono: '#00C48C',
       },
       fontFamily: {
-        sans: ['System'],
-        serif: ['serif'],
+        heading: ['Syne_700Bold'],
+        body: ['PlusJakartaSans_400Regular'],
+        bodyMed: ['PlusJakartaSans_500Medium'],
+        bodySemi: ['PlusJakartaSans_600SemiBold'],
+        mono: ['JetBrainsMono_400Regular'],
       }
     },
   },

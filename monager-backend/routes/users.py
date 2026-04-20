@@ -6,9 +6,12 @@ from services.budget import reallocate_user_budgets
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
+from typing import Optional
+
 class UserProfileRequest(BaseModel):
     name: str
     income: float
+    age: Optional[int] = None
 
 @router.post("/{user_id}")
 def upsert_user(user_id: str, profile: UserProfileRequest):
@@ -21,17 +24,21 @@ def upsert_user(user_id: str, profile: UserProfileRequest):
     res = supabase.table('users').select('id').eq('id', user_id).execute()
     
     if res.data and len(res.data) > 0:
-        supabase.table('users').update({
+        update_data = {
             'name': profile.name,
-            'income': profile.income
-        }).eq('id', user_id).execute()
+            'income': profile.income,
+            # age not yet in DB schema — add column in Supabase before re-enabling
+        }
+        supabase.table('users').update(update_data).eq('id', user_id).execute()
     else:
-        supabase.table('users').insert({
+        insert_data = {
             'id': user_id,
             'name': profile.name,
             'income': profile.income,
-            'archetype': 'Pending' # default
-        }).execute()
+            'archetype': 'Pending',  # default
+            # age not yet in DB schema — add column in Supabase before re-enabling
+        }
+        supabase.table('users').insert(insert_data).execute()
     
     # Trigger budget re-allocation
     reallocate_user_budgets(user_id, profile.income, supabase)

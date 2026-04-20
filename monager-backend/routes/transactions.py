@@ -75,39 +75,86 @@ async def scan_receipt(user_id: str, background_tasks: BackgroundTasks, file: Up
     """
     Uses Gemini Vision to OCR a receipt image, extract data, and log the transaction.
     """
+    import base64
     user_id = format_uid(user_id)
     if not GEMINI_API_KEY:
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured.")
         
     try:
         contents = await file.read()
-        image_part = types.Part.from_bytes(data=contents, mime_type=file.content_type)
+        mime_type = file.content_type or "image/jpeg"
+        print(f"[OCR] Received file: {file.filename}, size: {len(contents)} bytes, mime: {mime_type}")
         
-        prompt = """
-        Analyze this receipt. Extract the following information and return strictly a valid JSON object without markdown formatting:
-        {
-            "merchant": "Name of the store or merchant",
-            "amount": "Total final amount as a float number (do not include currency symbols)",
-            "date": "Date of transaction in YYYY-MM-DD format (if visible, else null)"
+        # Use base64 inline data for maximum compatibility
+        b64_data = base64.standard_b64encode(contents).decode("utf-8")
+        image_part = {
+            "inline_data": {
+                "mime_type": mime_type,
+                "data": b64_data
+            }
         }
-        """
-        
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=[prompt, image_part]
+
+        prompt = (
+            "Analyze this receipt image and extract the merchant name, total amount, and date. "
+            "Return ONLY a valid JSON object in exactly this format, no markdown, no explanation:\n"
+            '{"merchant": "Store Name", "amount": 123.45, "date": "2024-01-15"}'
         )
         
-        text = response.text.strip()
+        import urllib.request
+        import urllib.error
+        
+        request_body = json.dumps({
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        image_part
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.1,
+                "maxOutputTokens": 256
+            }
+        }).encode("utf-8")
+        
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        req = urllib.request.Request(
+            api_url,
+            data=request_body,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            gemini_resp = json.loads(resp.read().decode("utf-8"))
+        
+        print(f"[OCR] Gemini raw response: {json.dumps(gemini_resp, indent=2)[:500]}")
+        
+        # Extract text from response
+        candidates = gemini_resp.get("candidates", [])
+        if not candidates:
+            raise ValueError("Gemini returned no candidates.")
+        
+        text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+        print(f"[OCR] Extracted text: {text}")
+        
+        if not text:
+            raise ValueError("Gemini returned empty text.")
+        
+        # Clean markdown fences
         if text.startswith("```json"):
-            text = text[7:-3].strip()
-        elif text.startswith("```"):
-            text = text[3:-3].strip()
+            text = text[7:].strip()
+        if text.startswith("```"):
+            text = text[3:].strip()
+        if text.endswith("```"):
+            text = text[:-3].strip()
             
         data = json.loads(text)
         
-        merchant = data.get("merchant") or "Unknown Merchant"
+        merchant = str(data.get("merchant") or "Unknown Merchant")
         amount = float(data.get("amount") or 0)
-        date_str = data.get("date")
+        date_str = str(data.get("date")) if data.get("date") else None
         
         category = categorize(merchant)
         txn_id = str(uuid.uuid4())
@@ -123,7 +170,7 @@ async def scan_receipt(user_id: str, background_tasks: BackgroundTasks, file: Up
             "is_scanned": True
         }).execute()
         
-        # Update binder logic
+        # Update binder budget
         res = supabase.table('binder_sections').select('*').eq('user_id', user_id).eq('category', category).execute()
         if res.data and len(res.data) > 0:
             section = res.data[0]
@@ -135,6 +182,8 @@ async def scan_receipt(user_id: str, background_tasks: BackgroundTasks, file: Up
             }).eq('id', section['id']).execute()
             
         background_tasks.add_task(_generate_sticky_note, user_id)
+
+        print(f"[OCR] Success! merchant={merchant}, amount={amount}, category={category}")
             
         return {
             "status": "success",
@@ -144,6 +193,8 @@ async def scan_receipt(user_id: str, background_tasks: BackgroundTasks, file: Up
             "category": category
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to process receipt: {str(e)}")
 
 @router.get("/{user_id}")
